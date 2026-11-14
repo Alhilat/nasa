@@ -25,6 +25,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements.lock
       - run: pip install --no-deps -e ./backend -e ./data-pipeline
+      # Gate undefined names now; expand as the existing lint backlog is resolved.
+      - run: ruff check backend/app data-pipeline/firescope_pipeline tests --select F821,F822,F823
       - run: pytest -q
       - run: alembic -c backend/alembic.ini upgrade head --sql > /tmp/firescope-migration.sql
   frontend:

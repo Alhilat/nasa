@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
-import { Crosshair, Maximize2 } from 'lucide-react';
+import { Crosshair, Maximize2, RefreshCw } from 'lucide-react';
+import { mapStyle } from '../mapStyle';
+import { watchBasemap } from '../basemap';
 import type { ObservationProperties, Observations } from '../types';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -17,9 +19,10 @@ type Props = {
 export default function FireMap({ data, onBounds, onSelect }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const retryBasemap = useRef<(() => void) | null>(null);
   const latest = useRef({ data, onSelect });
   latest.current = { data, onSelect };
-  const [mapError, setMapError] = useState(false);
+  const [mapError, setMapError] = useState('');
 
   useEffect(() => {
     if (!container.current) return;
@@ -27,18 +30,20 @@ export default function FireMap({ data, onBounds, onSelect }: Props) {
     try {
       map = new maplibregl.Map({
         container: container.current,
-        style: import.meta.env.VITE_MAP_STYLE_URL ?? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        style: mapStyle(),
         center: [24, 12], zoom: 1.7, minZoom: 0.8,
         renderWorldCopies: false, attributionControl: { compact: true },
       });
     } catch {
-      setMapError(true);
+      setMapError('Interactive map unavailable.');
       return;
     }
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    map.on('error', () => setMapError(true));
-    map.on('load', () => {
+    const basemap = watchBasemap(map, setMapError);
+    retryBasemap.current = basemap.retry;
+    map.on('style.load', () => {
+      if (map.getSource('observations')) return;
       map.addSource('observations', { type: 'geojson', data: latest.current.data ?? empty });
       map.addLayer({
         id: 'observations', type: 'circle', source: 'observations',
@@ -48,16 +53,16 @@ export default function FireMap({ data, onBounds, onSelect }: Props) {
           'circle-opacity': 0.85, 'circle-stroke-width': 1, 'circle-stroke-color': '#ffffff55',
         },
       });
-      map.on('click', 'observations', (event: MapLayerMouseEvent) => {
-        const properties = event.features?.[0]?.properties;
-        if (properties) latest.current.onSelect(properties as ObservationProperties);
-      });
-      map.on('mouseenter', 'observations', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'observations', () => { map.getCanvas().style.cursor = ''; });
     });
+    map.on('click', 'observations', (event: MapLayerMouseEvent) => {
+      const properties = event.features?.[0]?.properties;
+      if (properties) latest.current.onSelect(properties as ObservationProperties);
+    });
+    map.on('mouseenter', 'observations', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'observations', () => { map.getCanvas().style.cursor = ''; });
     const resize = new ResizeObserver(() => map.resize());
     resize.observe(container.current);
-    return () => { resize.disconnect(); map.remove(); mapRef.current = null; };
+    return () => { basemap.dispose(); retryBasemap.current = null; resize.disconnect(); map.remove(); mapRef.current = null; };
   }, []);
 
   useEffect(() => {
@@ -73,18 +78,17 @@ export default function FireMap({ data, onBounds, onSelect }: Props) {
     ]);
   }
 
-  return <div className="fire-map">
+  return <div className={'fire-map' + (mapError ? ' has-map-problem' : '')}>
     <div ref={container} className="map-canvas" aria-label="Interactive satellite fire observation map" />
     <div className="map-topbar">
-      <span className="map-badge"><span className="status-dot" /> OBSERVATION MAP</span>
       <button className="map-action" onClick={selectBounds}><Crosshair size={14} /> Use map bounds</button>
     </div>
     <button className="reset-map" aria-label="Reset map view" title="Reset map view" onClick={() => mapRef.current?.flyTo({ center: [24, 12], zoom: 1.7 })}><Maximize2 size={16} /></button>
     {(!data || data.features.length === 0) && <div className="map-empty">
-      <span className="map-crosshair">+</span><span>No observations displayed</span>
-      <small>Connect an archive, then apply your filters</small>
+      <span>No observations displayed</span>
+      <small>Try a different area, date range or sensor.</small>
     </div>}
-    {mapError && <div className="map-warning" role="status">Basemap unavailable. Check connectivity or configure a local map style.</div>}
+    {mapError && <div className="map-warning" role="status"><span>{mapError}</span>{retryBasemap.current && <button type="button" className="button secondary" onClick={() => retryBasemap.current?.()}><RefreshCw size={14} /> Retry basemap</button>}</div>}
     <div className="map-legend"><span><i className="dot modis" /> MODIS · 1 km</span><span><i className="dot viirs" /> VIIRS · 375 m</span><span className="legend-note">Nominal pixel resolution</span></div>
   </div>;
 }

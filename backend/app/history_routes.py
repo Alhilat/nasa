@@ -129,7 +129,7 @@ def export_calendar(query: HistoryQuery, session: SessionDep):
         calendar_csv(result),
         media_type="text/csv",
         headers={
-            "Content-Disposition": 'attachment; filename="firescope-history.csv"',
+            "Content-Disposition": 'attachment; filename="pirx-history.csv"',
             "X-Analysis-ID": result["analysis_id"],
         },
     )

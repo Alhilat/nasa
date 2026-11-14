@@ -12,11 +12,15 @@ Copy the root `.env.example` to `.env`. The default credentials are for a loopba
 | `CORS_ORIGINS` | JSON array of allowed browser origins; defaults to localhost and 127.0.0.1 on ports 5173 and 8080 |
 | `MAX_QUERY_RESULTS` | Server result cap (up to the public hard limit of 5,000) |
 | `VITE_API_BASE_URL` | Public browser API URL; set before frontend build |
-| `VITE_MAP_STYLE_URL` | Public MapLibre style URL; defaults to CARTO dark basemap |
+| `VITE_MAP_STYLE_URL` | Optional MapLibre style URL; blank uses Esri World Imagery with World Boundaries and Places |
 | `MAP_KEY` | Optional server-only NASA FIRMS API key; passed only to the pipeline container |
 | `TEST_DATABASE_URL` | Integration database; enables real PostGIS tests in an isolated schema |
 
-`.env` files are ignored. Public `VITE_*` variables are embedded in browser bundles and must contain no secrets. Rebuild the frontend after changing them. The default basemap sends browser requests to CARTO and its referenced providers; configure self-hosted map styles/assets for offline or private environments. An unavailable basemap does not synthesize scientific data.
+`.env` files are ignored. Public `VITE_*` variables are embedded in browser bundles and must contain no secrets. Rebuild the frontend after changing them. The default basemap uses the frontend's `/basemap/imagery/{z}/{y}/{x}` and `/basemap/reference/{z}/{y}/{x}` tile routes. Vite during development and nginx in Docker forward these requests to the two fixed Esri ArcGIS services over verified HTTPS, without forwarding browser cookies or authorization headers. Custom MapLibre styles still use their own source URLs. Configure self-hosted map styles/assets for offline or private environments. An unavailable basemap does not synthesize scientific data.
+
+Tile failures keep the original basemap sources and archive overlays in place. **Retry basemap** reloads the style and restores the current detections and selected region while preserving the camera. A successful tile load clears the warning. The dashboard initially fits the selected study area; its reset control fits the current area again.
+
+Both maps use [World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9) with the transparent [World Boundaries and Places](https://www.arcgis.com/home/item.html?id=a842e359856a4365b1ddf8cc34fde079) reference layer, matching the supplied ArcGIS map. Provider credits are retained in the map attribution and map PNG exports. Imagery is geographic context, independent of the selected detection dates. Esri lists the supplied reference layer as retiring in December 2029; review its replacement before that date.
 
 ## Migrations and archives
 

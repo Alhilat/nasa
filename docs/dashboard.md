@@ -1,7 +1,8 @@
 # FireScope scientific dashboard
 
 The root route `/` is the responsive navy/charcoal dashboard. It uses React,
-TypeScript, Tailwind, MapLibre GL JS and Apache ECharts. `/explorer`, `/history`,
+TypeScript, Tailwind, MapLibre GL JS and Apache ECharts. Observation browsing and
+inspection are part of the dashboard; `/explorer` redirects there. `/history`,
 `/sources` and `/methodology` retain their dedicated workflows and use the same theme.
 No demonstration observations or scientific results are served by the UI.
 
@@ -43,22 +44,40 @@ or FIRMS keys through `VITE_` environment variables.
 
 ## Data and interactions
 
-- Map observations and summary totals share the exact date, region, confidence and
-  sensor selection. The end date is inclusive in the UI and exclusive at the API.
+- The main overview explains that satellites recorded unusually hot spots, links
+  directly to their map locations and gives the latest record date. It does not
+  present detection totals as a number of fires. Raw readings, source-file counts
+  and summed radiative power are available under **Show the underlying data**;
+  saved-grid counts remain in the comparison section.
+- The dashboard first reads the unfiltered archive summary and converts its first
+  and last acquisition timestamps to UTC dates. Those dates initialize and bound
+  the date inputs and the two-handle range slider; an empty or unavailable archive
+  does not receive an invented date range. Presets select all dates, the latest
+  twelve months, or the latest five years relative to the newest archived date.
+- Named study-area choices and satellite cards replace the default coordinate and
+  sensor-code inputs. Cards show pixel sizes and archive counts; satellites without
+  archived data are disabled. Analysis settings provide confidence choices, sliders
+  for the percentile and minimum reference years, and a saved-grid selector.
+  Coordinate entry, imported GeoJSON, older job IDs and verified coverage JSON remain
+  available through explicit custom/advanced options.
+- Map observations and summary totals share the region, confidence and sensor selection.
+  The map can show the full selected period or request one month at a time, clipped to
+  the selected dates; other totals remain for the full period. The end date is inclusive
+  in the UI and exclusive at the API.
   Applying filters or refreshing clears prior responses; failed requests do not turn
   missing totals into zeros. Sections can succeed or fail independently.
-- MapLibre supports click-to-draw polygons and rectangles, finishing/cancelling a
-  polygon, selecting the viewport and resetting to the study envelope. Bounds and
-  GeoJSON fields provide a keyboard alternative. A pending drawn area only becomes
-  the analytical selection after **Apply filters**. Existing completeness declarations
-  are cleared when the area, confidence or sensor selection changes.
+- Choose a study area, enter bounds or import GeoJSON in advanced settings. Existing
+  completeness declarations are cleared when the area, confidence or sensor selection changes.
 - The initial bounds `[34,29,40,34]` are a Jordan study envelope, not the national
   boundary. Use a polygon for a precise area. Wrapped bounds and split MultiPolygons
-  support the antimeridian. Drawing tools reject unsplit antimeridian regions.
+  support the antimeridian.
 - The map caps its displayed page at 2,000 observations and discloses this. Totals
   and detection CSV exports query the full selection. Basemap attribution is retained;
-  style failures use a plain coordinate canvas so drawing and real points can still
-  work. `VITE_MAP_STYLE_URL` can select an externally hosted or local MapLibre style.
+  tile failures retain the basemap sources and keep real points usable.
+  A retry control reloads the style and restores the current overlays without moving
+  the camera. Overlays initialize when the style is ready, before imagery tiles
+  finish downloading. The initial view and reset control fit the selected area.
+  `VITE_MAP_STYLE_URL` can select an externally hosted or local MapLibre style.
 - Historical calendars, trends and anomaly assessments use the entire first and last
   years of the date selection, disclosed above those panels. They retain the same area,
   confidence and sensors. A sensor selector controls the calendar and trend without
@@ -76,6 +95,14 @@ or FIRMS keys through `VITE_` environment variables.
   uncertainty explanations and analysis identity are available next to the outputs.
   Clicking an actual map detection retrieves its source row, original fields and
   uncertainty from `/observations/{id}`. Dedicated archive routes retain all source links.
+- The on-demand detection check queries the local archive for other observations
+  within 2 km of the selected point using PostGIS geography distance. It counts records
+  within 24 hours on either side, and separately counts records in the 365 days on either
+  side excluding the 48-hour window. The time boundaries are inclusive, all archived
+  sensors and confidence classes are included, and the selected record is excluded.
+  Days and months are UTC. These are descriptive counts, not independent fires or a
+  validated fire classification. Archive completeness is unknown. Land cover, mapped
+  facilities, independent fire reports and confirming imagery are not connected.
 
 ## Added FastAPI routes
 
@@ -113,7 +140,7 @@ coordinates and null scientific measurements are preserved.
 
 Unit tests use clearly synthetic software fixtures, isolated from the application archive.
 They cover real API transport, empty/error states, sensor and region selection, month
-inspection, missing data, region drawing, CSV metadata and equivalent comparison scope.
+inspection, missing data, month-by-month map queries, CSV metadata and equivalent comparison scope.
 The optional PostGIS suite exercises exports and a persisted aggregate comparison in its
 isolated test schema when `TEST_DATABASE_URL` is available. Browser layout checks at
 390 and 1512 CSS pixels cover the real application and its database-unavailable state.

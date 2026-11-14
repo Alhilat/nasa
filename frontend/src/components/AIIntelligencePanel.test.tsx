@@ -4,7 +4,6 @@ import AIIntelligencePanel from './AIIntelligencePanel';
 import { intelligence } from '../intelligence';
 import type { AIReply } from '../intelligence';
 import type { HistoryQuery } from '../history';
-import { downloadArtifact } from '../history';
 
 vi.mock('../intelligence', () => ({ intelligence: { status: vi.fn(), ask: vi.fn(), reset: vi.fn(), exportReport: vi.fn() } }));
 vi.mock('../history', async original => ({ ...await original<typeof import('../history')>(), downloadArtifact: vi.fn() }));
@@ -23,7 +22,7 @@ beforeEach(() => {
   vi.mocked(intelligence.exportReport).mockResolvedValue('# Synthetic test report');
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-const ask = async () => { await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' }).hasAttribute('disabled')).toBe(false)); fireEvent.change(screen.getByLabelText('Scientific question'), { target: { value: 'Explain this selected area' } }); fireEvent.click(screen.getByRole('button', { name: 'Ask' })); };
+const ask = async () => { await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' }).hasAttribute('disabled')).toBe(false)); fireEvent.change(screen.getByLabelText('Question'), { target: { value: 'Explain this selected area' } }); fireEvent.click(screen.getByRole('button', { name: 'Ask' })); };
 
 it('uses the applied map context, renders evidence and follows up with a server conversation ID', async () => {
   render(<AIIntelligencePanel context={context} />);
@@ -42,21 +41,20 @@ it('clears stale answers and conversation context when the applied map region ch
   const view = render(<AIIntelligencePanel context={context} />);
   await ask(); await screen.findByText('Synthetic archived count');
   view.rerender(<AIIntelligencePanel context={{ ...context, bbox: [35,30,39,33] }} />);
-  expect(await screen.findByText(/The applied map context changed/)).toBeTruthy();
+  expect(await screen.findByText(/Selection changed/)).toBeTruthy();
   expect(screen.queryByText('Synthetic archived count')).toBeNull();
   await ask();
   await waitFor(() => expect(vi.mocked(intelligence.ask).mock.calls[1][2]).toBeUndefined());
 });
 
-it('generates a report through the report endpoint and exports only the stored report identity', async () => {
+it('generates a report without offering downloads', async () => {
   render(<AIIntelligencePanel context={context} />);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' }).hasAttribute('disabled')).toBe(false));
   fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
   await screen.findByText('Synthetic archived count');
   expect(vi.mocked(intelligence.ask).mock.calls[0][3]).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: 'Report · Markdown' }));
-  await waitFor(() => expect(intelligence.exportReport).toHaveBeenCalledWith(reply, 'markdown'));
-  expect(downloadArtifact).toHaveBeenCalledWith('# Synthetic test report', 'firescope-ai-report.md', 'text/markdown');
+  expect(screen.queryByRole('button', { name: /report · markdown|evidence · json/i })).toBeNull();
+  expect(intelligence.exportReport).not.toHaveBeenCalled();
 });
 
 it('shows provider failure without manufacturing an answer', async () => {

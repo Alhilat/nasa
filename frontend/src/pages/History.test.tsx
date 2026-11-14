@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import History from './History';
+import { MemoryRouter } from 'react-router-dom';
 import { historyRequest } from '../history';
 import type { HistoryResult } from '../history';
 
@@ -18,7 +19,7 @@ it('runs an explicit area/sensor selection and renders unknown counts without ze
       anomaly_status: 'incomplete_period', year_over_year: { percent_change: null } }],
     yearly: [], seasonal_profiles: [], spatial: { features: [] }, concentration: [], metric_explanations: {},
   } as unknown as HistoryResult));
-  render(<History />);
+  render(<MemoryRouter><History /></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: 'Analyze archive' }));
   expect(await screen.findByText('Monthly activity calendar and anomalies')).toBeTruthy();
   expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
@@ -30,7 +31,7 @@ it('runs an explicit area/sensor selection and renders unknown counts without ze
 
 it('rejects malformed bounds before sending an analysis request', async () => {
   vi.mocked(historyRequest).mockClear();
-  render(<History />);
+  render(<MemoryRouter><History /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/Fixed bounding box/), { target: { value: '34,,40,34' } });
   fireEvent.click(screen.getByRole('button', { name: 'Analyze archive' }));
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Supply four finite bounds: west,south,east,north.');

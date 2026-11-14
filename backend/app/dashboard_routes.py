@@ -255,5 +255,5 @@ def observation_csv(query: ObservationQuery, session: SessionDep):
     return Response(
         output.getvalue(),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="firescope-detections.csv"'},
+        headers={"Content-Disposition": 'attachment; filename="pirx-detections.csv"'},
     )

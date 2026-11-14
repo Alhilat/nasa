@@ -16,7 +16,7 @@ from google.genai import errors, types
 from .schemas import AgentReply, Interpretation
 from .tools import CATALOG, TOOL_SPECS, ToolRegistry
 
-SYSTEM = """You are FireScope's scientific interpretation assistant. Call the declared Python
+SYSTEM = """You are PIRX's scientific interpretation assistant. Call the declared Python
 tools for every factual request. Never compute measurements, percent changes, thresholds,
 statistics or charts yourself. Use exactly the server evidence. A hotspot is a thermal
 detection, never a unique wildfire or burned-area measurement. Do not infer causation from

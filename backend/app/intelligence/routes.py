@@ -110,7 +110,7 @@ def markdown_report(reply):
         return value
 
     lines = [
-        "# FireScope scientific activity report",
+        "# PIRX scientific activity report",
         "",
         f"Model: {text(reply.model)}",
         f"Created (UTC): {text(reply.created_at)}",
@@ -208,7 +208,7 @@ def export(payload: ExportRequest, agent: AgentDep):
         content,
         media_type="application/json" if suffix == "json" else "text/markdown",
         headers={
-            "Content-Disposition": f'attachment; filename="firescope-ai-report.{suffix}"',
+            "Content-Disposition": f'attachment; filename="pirx-ai-report.{suffix}"',
             "Cache-Control": "no-store",
         },
     )

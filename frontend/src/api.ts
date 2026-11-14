@@ -1,4 +1,4 @@
-import type { Job, ObservationDetail, Observations, Query, Source, Summary } from './types';
+import type { DetectionContext, Job, ObservationDetail, Observations, Query, Source, Summary } from './types';
 
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
 
@@ -13,13 +13,15 @@ export async function request<T>(path: string, signal?: AbortSignal, body?: unkn
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    throw new Error('Cannot reach the FireScope API. Start the backend and check your API URL.');
+    throw new Error('Cannot reach the PIRX API. Start the backend and check your API URL.');
   }
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     const detail = Array.isArray(error.detail) ? error.detail.map((item: { loc?: string[]; msg?: string }) => `${item.loc?.filter(v => v !== 'body').join('.') ?? 'Selection'}: ${item.msg ?? 'Invalid value'}`).join('; ') : error.detail;
     if (response.status === 404 && detail === 'Not Found' && path.startsWith('/analytics/'))
-      throw new Error('This analytical endpoint is unavailable. Restart FastAPI from the updated FireScope project.');
+      throw new Error('This analytical endpoint is unavailable. Restart FastAPI from the updated PIRX project.');
+    if (response.status === 404 && detail === 'Not Found' && path.endsWith('/context'))
+      throw new Error('The detection check is unavailable. Restart the updated backend.');
     throw new Error(typeof detail === 'string' ? detail : `Request failed (${response.status}). Check your filters and database setup.`);
   }
   return response.json() as Promise<T>;
@@ -31,6 +33,7 @@ export const api = {
   sources: (signal?: AbortSignal, offset = 0) => request<{ items: Source[]; has_more: boolean }>(`/sources?limit=50&offset=${offset}`, signal),
   jobs: (signal?: AbortSignal) => request<Job[]>('/jobs', signal),
   detail: (id: number, signal?: AbortSignal) => request<ObservationDetail>(`/observations/${id}`, signal),
+  detectionContext: (id: number, signal?: AbortSignal) => request<DetectionContext>(`/observations/${id}/context`, signal),
 };
 
 export function inclusiveEndDate(value: string): string | undefined {

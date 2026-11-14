@@ -14,6 +14,7 @@ export type ObservationProperties = {
   id: number; sensor_code: string; acquired_at: string; frp_mw: number | null;
   confidence_native: string; confidence_class: string; source_id: string;
   source_sha256: string; source_row: number; uncertainty: Record<string, unknown>;
+  coordinates?: [number, number];
 };
 export type Observations = FeatureCollection<Point, ObservationProperties> & {
   metadata: { returned: number; has_more: boolean; limit: number; offset: number };
@@ -39,4 +40,10 @@ export type Job = {
 export type ObservationDetail = {
   id: number; raw_properties: Record<string, string>; uncertainty: Record<string, unknown>;
   source_url: string; source_sha256: string; source_row: number; product_version: string;
+};
+export type DetectionContext = {
+  observation_id: number; radius_meters: number;
+  nearby: { start: string; end: string; detections: number; utc_days: number };
+  history: { start: string; end: string; detections: number; utc_months: number };
+  scope: string; coverage: string; interpretation: string; unavailable: string[];
 };

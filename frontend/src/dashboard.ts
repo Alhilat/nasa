@@ -1,33 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
 import { API_BASE, request } from './api';
 import type { HistoryQuery } from './history';
-import type { Query } from './types';
+import type { Query, Summary } from './types';
+
+export function archiveDates(archive: Summary): { first: string; last: string } | null {
+  if (!archive.first_acquisition || !archive.last_acquisition) return null;
+  const first = new Date(archive.first_acquisition), last = new Date(archive.last_acquisition);
+  if (!Number.isFinite(first.getTime()) || !Number.isFinite(last.getTime()) || first > last) return null;
+  return { first: first.toISOString().slice(0, 10), last: last.toISOString().slice(0, 10) };
+}
 
 export type Region = { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] };
-export type Resource<T> = { data: T | null; error: string; loading: boolean };
 export type Comparison = {
   job_id: string; algorithm_version: string; parameters: Record<string, unknown>;
   provenance: Record<string, unknown>; scope: string; method: string;
   raw_count: number | null; grid_count: number | null; archive_counts_match: boolean | null;
   daily: { sensor_code: string; day: string; raw_count: number; grid_count: number; occupied_cells: number }[];
 };
-
-export function useResource<T>(key: string | null, load: (signal: AbortSignal) => Promise<T>, revision = 0): Resource<T> {
-  const loader = useRef(load); loader.current = load;
-  const [state, setState] = useState<Resource<T>>({ data: null, error: '', loading: key !== null });
-  useEffect(() => {
-    if (key === null) { setState({ data: null, error: '', loading: false }); return; }
-    const controller = new AbortController();
-    setState({ data: null, error: '', loading: true });
-    loader.current(controller.signal).then(data => {
-      if (!controller.signal.aborted) setState({ data, error: '', loading: false });
-    }).catch(error => {
-      if (!controller.signal.aborted) setState({ data: null, error: error instanceof Error ? error.message : 'Request failed.', loading: false });
-    });
-    return () => controller.abort();
-  }, [key, revision]);
-  return state;
-}
 
 export function parseBounds(value: string): [number, number, number, number] {
   const parts = value.split(',').map(s => s.trim());

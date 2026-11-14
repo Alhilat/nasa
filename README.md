@@ -1,4 +1,4 @@
-# FireScope
+# PIRX
 
 [Gemini scientific intelligence](docs/gemini-intelligence.md) adds a tool-grounded
 conversation and exportable AI reports to the dashboard. All measurements and statistics
@@ -15,7 +15,7 @@ concentration, trend charts and reproducible exports. See
 
 Satellite Fire Intelligence Platform foundation for the NASA Space Apps Challenge 2026 project brief: Harmonization of MODIS and VIIRS Hot Spots.
 
-FireScope archives original FIRMS CSV files, separates raw records from normalized observations, supports geographic exploration, and produces reproducible sensor/day/grid summaries. Optional MAP_KEY API synchronization supports recent observations with retries and transactional checkpoints. **No scientific observations are bundled, generated, or downloaded automatically. No machine learning is implemented.** Test fixtures are explicitly synthetic and isolated from the application archive.
+PIRX archives original FIRMS CSV files, separates raw records from normalized observations, supports geographic exploration, and produces reproducible sensor/day/grid summaries. Optional MAP_KEY API synchronization supports recent observations with retries and transactional checkpoints. **No scientific observations are bundled, generated, or downloaded automatically. No machine learning is implemented.** Test fixtures are explicitly synthetic and isolated from the application archive.
 
 ## MODIS/VIIRS statistical harmonization
 
@@ -58,7 +58,7 @@ docker compose --env-file .env -f infrastructure/compose.yaml ps -a
 curl --fail http://localhost:8000/api/v1/health/ready
 ```
 
-Open [FireScope](http://localhost:8080), [API documentation](http://localhost:8000/docs), or [public configuration](http://localhost:8000/api/v1/config). A fresh database has sensor metadata only. The explorer displays an empty archive until you import real observations.
+Open [PIRX](http://localhost:8080), [API documentation](http://localhost:8000/docs), or [public configuration](http://localhost:8000/api/v1/config). A fresh database has sensor metadata only. The explorer displays an empty archive until you import real observations.
 
 If startup fails, inspect `docker compose --env-file .env -f infrastructure/compose.yaml logs migrate api db`. To stop without deleting the archive:
 

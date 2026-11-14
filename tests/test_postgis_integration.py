@@ -6,7 +6,7 @@ All observations in this module are synthetic software fixtures, never NASA data
 import argparse
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -60,6 +60,38 @@ def test_dashboard_csv_uses_real_archive_selection(db_client, imported):
     rows = list(csv.DictReader(io.StringIO(response.text)))
     assert len(rows) == 2
     assert all(r["sha256"] == imported[0]["sha256"] for r in rows)
+
+
+def test_detection_context_counts_distance_and_time_boundaries(factory, imported):
+    with factory() as session:
+        target = session.scalar(select(Observation).where(
+            Observation.longitude == 0, Observation.latitude == 0,
+        ))
+        offsets = [timedelta(hours=-24), timedelta(hours=24), timedelta(hours=24, seconds=1),
+                   timedelta(days=365), timedelta(days=365, seconds=1)]
+        for index, offset in enumerate(offsets, start=100):
+            raw = RawRecord(source_id=target.source_id, source_row=index,
+                            sensor_code=target.sensor_code, raw_properties={"test": str(index)})
+            session.add(raw)
+            session.flush()
+            session.add(Observation(source_id=target.source_id, source_row=index,
+                sensor_code=target.sensor_code, acquired_at=target.acquired_at + offset,
+                latitude=0, longitude=0.001, confidence_native="80", confidence_class="high",
+                uncertainty={}, record_hash=f"{index:064x}"))
+        session.flush()
+        app.dependency_overrides[get_session] = lambda: session
+        try:
+            with TestClient(app) as client:
+                response = client.get(f"/api/v1/observations/{target.id}/context")
+                assert response.status_code == 200, response.text
+                result = response.json()
+                assert result["nearby"]["detections"] == 2
+                assert result["history"]["detections"] == 2
+                assert result["radius_meters"] == 2000
+                assert client.get("/api/v1/observations/999999999/context").status_code == 404
+        finally:
+            app.dependency_overrides.clear()
+            session.rollback()
 
 
 @pytest.fixture(scope="module")

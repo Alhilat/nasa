@@ -21,7 +21,7 @@ NOTES = {
     "Distinct overpasses and product revisions remain distinct. Sensors are never pooled.",
     "coverage": "Absent months are null, not zero. Positive counts do not establish completeness. "
     "Complete months are caller-attested for this exact area and confidence selection; "
-    "references are retained, not independently verified by FireScope. Archive "
+    "references are retained, not independently verified by PIRX. Archive "
     "completeness does not establish satellite exposure or fire absence.",
     "baseline": "Only complete months of the same sensor, area and calendar month are used. "
     "Each target uses strictly earlier years within the requested baseline interval. "

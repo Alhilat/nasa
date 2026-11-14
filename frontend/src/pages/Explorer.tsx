@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowDownToLine, ArrowRight, Database, Flame, Globe2, Info, Layers2, RefreshCw, SlidersHorizontal } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowRight, Database, Flame, Globe2, Info, Layers2, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { api, inclusiveEndDate } from '../api';
 import FireMap from '../components/FireMap';
 import ActivityChart from '../components/ActivityChart';
@@ -13,18 +13,20 @@ const initialQuery: Query = { sensors: [], limit: 2000 };
 const format = (value: number | undefined) => value === undefined ? '—' : value.toLocaleString();
 
 export default function Explorer() {
-  const [query, setQuery] = useState<Query>(initialQuery);
+  const location = useLocation();
+  const selectedQuery = (location.state as { query?: Query } | null)?.query;
+  const [query, setQuery] = useState<Query>(selectedQuery ?? initialQuery);
   const [data, setData] = useState<Observations | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(true);
   const [refresh, setRefresh] = useState(0);
-  const [instrument, setInstrument] = useState('all');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [bbox, setBbox] = useState('');
-  const [polygon, setPolygon] = useState('');
-  const [confidence, setConfidence] = useState('');
+  const [instrument, setInstrument] = useState(selectedQuery?.sensors.length && selectedQuery.sensors.every(s => s.startsWith('MODIS')) ? 'MODIS' : selectedQuery?.sensors.length && selectedQuery.sensors.every(s => s.startsWith('VIIRS')) ? 'VIIRS' : 'all');
+  const [start, setStart] = useState(selectedQuery?.start?.slice(0, 10) ?? '');
+  const [end, setEnd] = useState(selectedQuery?.end ? new Date(new Date(selectedQuery.end).getTime() - 1).toISOString().slice(0, 10) : '');
+  const [bbox, setBbox] = useState(selectedQuery?.bbox?.join(', ') ?? '');
+  const [polygon, setPolygon] = useState(selectedQuery?.polygon ? JSON.stringify(selectedQuery.polygon) : '');
+  const [confidence, setConfidence] = useState(selectedQuery?.confidence ?? '');
   const [advanced, setAdvanced] = useState(false);
   const [formError, setFormError] = useState('');
   const [selected, setSelected] = useState<ObservationProperties | null>(null);
@@ -62,20 +64,12 @@ export default function Explorer() {
     } catch (e) { setFormError(e instanceof Error ? e.message : 'Check your filters.'); }
   }
 
-  function exportData() {
-    if (!data) return;
-    const payload = { ...data, metadata: { ...data.metadata, query, exported_at: new Date().toISOString(), science_note: 'Unadjusted thermal detections. Not burned area. Export includes displayed page only.' } };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/geo+json' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'firescope-observations.geojson'; anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
   const modis = Object.entries(summary?.by_sensor ?? {}).filter(([s]) => s.startsWith('MODIS')).reduce((sum, [, n]) => sum + n, 0);
   const viirs = Object.entries(summary?.by_sensor ?? {}).filter(([s]) => s.startsWith('VIIRS')).reduce((sum, [, n]) => sum + n, 0);
 
   return <>
-    <header className="page-header"><div><div className="eyebrow">THE BIG PICTURE, WITH EVERY DETAIL</div><h1>Fire intelligence explorer<span>.</span></h1><p>Two sensor families. One transparent view of our changing planet.</p></div><button className="button secondary export" onClick={exportData} disabled={!data?.features.length}><ArrowDownToLine size={15} /> Export GeoJSON</button></header>
-    <div className="workspace-status"><span><i className={`status-dot ${error ? 'offline' : busy ? 'waiting' : ''}`} />{busy ? 'Connecting to your archive' : error ? 'Archive disconnected' : 'Archive connected'}</span><span>Historical observations <b>·</b> All times UTC</span></div>
+    <header className="page-header"><div><h1>Observations</h1><p>Browse MODIS and VIIRS detections by location, date and sensor.</p></div></header>
+    <div className="workspace-status"><span><i className={`status-dot ${error ? 'offline' : busy ? 'waiting' : ''}`} />{busy ? 'Loading observations' : error ? 'Archive disconnected' : 'Archive connected'}</span><span>Historical observations <b>·</b> All times UTC</span></div>
     <section className="metrics" aria-label="Observation summary">
       <article className="metric"><div className="metric-label">Total detections <span className="metric-icon orange"><Flame size={17} /></span></div><strong>{format(summary?.detection_count)}</strong><small>Unadjusted observation count</small></article>
       <article className="metric"><div className="metric-label">MODIS observations <span className="metric-icon amber"><Layers2 size={17} /></span></div><strong>{summary ? format(modis) : '—'}</strong><small><i className="dot modis" /> Terra & Aqua · 1 km nominal</small></article>
@@ -92,9 +86,9 @@ export default function Explorer() {
       <div className="map-wrap"><FireMap data={data} onBounds={bounds => { setBbox(bounds.map(v => v.toFixed(5)).join(', ')); setAdvanced(true); filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} onSelect={setSelected} />{selected && <ObservationInspector observation={selected} close={() => setSelected(null)} />}</div>
       <div className="map-footer"><span><i className="status-dot waiting" />{busy ? 'Loading observations…' : data ? `${format(data.metadata.returned)} displayed${data.metadata.has_more ? ' · result capped at 2,000; narrow filters for more detail' : ''}` : 'Waiting for archive connection'}</span><span>WGS84 / EPSG:4326</span></div>
     </section>
-    {error && <div className="connection-notice" role="alert"><Info size={18} /><div><strong>Your exploration starts with a connected archive</strong><p>{error}</p></div><button className="button secondary" onClick={() => setRefresh(n => n + 1)}><RefreshCw size={14} /> Retry</button></div>}
-    {!busy && summary?.detection_count === 0 && <div className="connection-notice"><Database size={18} /><div><strong>No observations match this view</strong><p>Import a real NASA FIRMS CSV using the documented pipeline, or broaden your filters.</p></div><Link className="text-link" to="/sources">View data sources <ArrowRight size={14} /></Link></div>}
-    <div className="lower-grid"><section className="panel activity-panel"><div className="panel-heading"><div><h2>Activity over time</h2><p>Daily detections, separated by sensor</p></div><span className="subtle-tag">UTC · DAILY</span></div><ActivityChart summary={summary} /><div className="chart-footnote">Missing days are omitted; gaps do not mean zero fire activity.</div>{!!summary?.daily.length && <details className="chart-table"><summary>View daily counts as a table</summary><table><thead><tr><th>Date (UTC)</th><th>Sensor</th><th>Detections</th></tr></thead><tbody>{summary.daily.map(row => <tr key={`${row.day}-${row.sensor_code}`}><td>{row.day}</td><td>{row.sensor_code}</td><td>{row.count}</td></tr>)}</tbody></table></details>}</section><section className="panel science-card"><div className="science-icon"><Layers2 size={21} /></div><span className="eyebrow">UNDERSTAND THE SIGNAL</span><h2>Different sensors.<br />Shared perspective.</h2><p>MODIS and VIIRS see fire differently. Explore them together while keeping their resolution, confidence and source context intact.</p><Link to="/methodology" className="text-link">How harmonization works <ArrowRight size={15} /></Link></section></div>
-    <div className="science-note"><Info size={15} /><p>Thermal detections are not unique fire events or burned area. Sensor coverage and bias are not corrected in this foundation. Historical comparisons and descriptive anomalies are available in Historical intelligence. Forecasting is not implemented.</p></div>
+    {error && <div className="connection-notice" role="alert"><Info size={18} /><div><strong>Archive unavailable</strong><p>{error}</p></div><button className="button secondary" onClick={() => setRefresh(n => n + 1)}><RefreshCw size={14} /> Retry</button></div>}
+    {!busy && summary?.detection_count === 0 && <div className="connection-notice"><Database size={18} /><div><strong>No observations match this view</strong><p>Try broadening your filters or check whether archive data is available.</p></div><Link className="text-link" to="/sources">View data sources <ArrowRight size={14} /></Link></div>}
+    <div className="lower-grid"><section className="panel activity-panel"><div className="panel-heading"><div><h2>Activity over time</h2><p>Daily detections, separated by sensor</p></div><span className="subtle-tag">UTC · DAILY</span></div><ActivityChart summary={summary} /><div className="chart-footnote">Missing days are omitted; gaps do not mean zero fire activity.</div>{!!summary?.daily.length && <details className="chart-table"><summary>View daily counts as a table</summary><table><thead><tr><th>Date (UTC)</th><th>Sensor</th><th>Detections</th></tr></thead><tbody>{summary.daily.map(row => <tr key={`${row.day}-${row.sensor_code}`}><td>{row.day}</td><td>{row.sensor_code}</td><td>{row.count}</td></tr>)}</tbody></table></details>}</section><section className="panel science-card"><h2>Sensor differences</h2><p>MODIS pixels are about 1 km; VIIRS pixels are about 375 m. Their overpass times and confidence scales also differ.</p><Link to="/methodology" className="text-link">View methods <ArrowRight size={15} /></Link></section></div>
+    <div className="science-note"><Info size={15} /><p>Counts represent satellite detections, not unique fires or burned area. Sensor coverage and bias are uncorrected.</p></div>
   </>;
 }

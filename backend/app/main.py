@@ -16,6 +16,7 @@ from app import repository
 from app.catalog import SCIENCE_NOTES, SENSOR_CODES
 from app.core.config import get_settings
 from app.db import get_session
+from app.detection_context import detection_context
 from app.dashboard_routes import router as dashboard_router
 from app.history_routes import router as history_router
 from app.intelligence.routes import AIBodyLimit, router as intelligence_router
@@ -26,7 +27,7 @@ from app.models import (
 from app.schemas import ObservationQuery
 
 settings = get_settings()
-app = FastAPI(title="FireScope API", version="0.1.0", docs_url="/docs")
+app = FastAPI(title="PIRX API", version="0.1.0", docs_url="/docs")
 app.include_router(history_router)
 app.include_router(dashboard_router)
 app.include_router(intelligence_router)
@@ -66,7 +67,7 @@ def readiness(session: SessionDep):
 @app.get(f"{API}/config", tags=["operations"])
 def configuration():
     return {
-        "name": "FireScope", "version": "0.1.0", "environment": settings.app_env,
+        "name": "PIRX", "version": "0.1.0", "environment": settings.app_env,
         "crs": "EPSG:4326", "time_zone": "UTC", "sensor_codes": SENSOR_CODES,
         "max_query_results": min(settings.max_query_results, 5000),
         "features": {"polygon_query": True, "grid_aggregation": True, "statistical_calibration": True,
@@ -160,6 +161,14 @@ def observation_detail(observation_id: int, session: SessionDep):
         "source_copies": [{"raw_record_id": r.id, "source_id": r.source_id,
                            "source_row": r.source_row, "sha256": r.sha256} for r in copies],
     }
+
+
+@app.get(f"{API}/observations/{{observation_id}}/context", tags=["observations"])
+def observation_context(observation_id: int, session: SessionDep):
+    row = session.get(Observation, observation_id)
+    if row is None:
+        raise HTTPException(404, "Observation not found")
+    return detection_context(session, row)
 
 
 @app.post(f"{API}/analytics/summary", tags=["analytics"])
