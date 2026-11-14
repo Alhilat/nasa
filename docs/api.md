@@ -14,6 +14,11 @@ Base URL: `http://localhost:8000/api/v1`. OpenAPI and interactive documentation:
 | `POST /analytics/summary` | Counts, known FRP summary and UTC daily counts for the full matching query |
 | `POST /analytics/comparison/{job_id}` | Equivalent full-cell/day raw vs saved common-grid comparison; no calibration |
 | `POST /observations/export.csv` | Full selected detections with source metadata, capped at 250,000; no display-page truncation |
+| `GET /ai/status` | Gemini configuration and public tool/region catalog; no key |
+| `POST /ai/chat` | Validated tool-grounded scientific interpretation and Python evidence |
+| `POST /ai/reports` | Collect evidence and generate a structured scientific report |
+| `POST /ai/reports/export` | Export an existing conversation-owned report as Markdown/JSON |
+| `POST /ai/conversations/reset` | Clear an ephemeral scientific conversation |
 | `GET /sources?limit=50&offset=0` | Source archive metadata; excludes original binary payload |
 | `GET /calibration-models/{sha256}` | Registered immutable statistical model artifact and validation scope; candidates are not automatically enabled |
 | `GET /quality-reports/{job_id}` | Immutable per-import quality report, including rejected imports |

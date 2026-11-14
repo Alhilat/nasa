@@ -13,14 +13,23 @@ from app.db import get_session
 from app.history import HistoryQuery, analyze, calendar_csv
 from app.models import Observation, ObservationRecord, RawRecord, SourceFile
 from app.repository import observation_filters
+from app.schemas import ObservationQuery
 
 router = APIRouter(prefix="/api/v1/analytics/history", tags=["historical intelligence"])
 SessionDep = Annotated[Session, Depends(get_session)]
 MAX_RECORDS = 250000
 
 
-def load_inputs(session: Session, query: HistoryQuery):
-    conditions = observation_filters(query.observation_query())
+def load_inputs(
+    session: Session,
+    query: HistoryQuery,
+    max_records: int | None = None,
+    selection: ObservationQuery | None = None,
+):
+    max_records = MAX_RECORDS if max_records is None else min(MAX_RECORDS, max_records)
+    conditions = observation_filters(
+        selection if selection is not None else query.observation_query()
+    )
     rows = session.execute(
         select(
             Observation.id,
@@ -34,10 +43,12 @@ def load_inputs(session: Session, query: HistoryQuery):
         )
         .where(*conditions)
         .order_by(Observation.id)
-        .limit(MAX_RECORDS + 1)
+        .limit(max_records + 1)
     ).all()
-    if len(rows) > MAX_RECORDS:
-        raise HTTPException(413, "Selection exceeds 250,000 observations; narrow the area/years")
+    if len(rows) > max_records:
+        raise HTTPException(
+            413, f"Selection exceeds {max_records:,} observations; narrow the area/years"
+        )
     copies = session.execute(
         select(ObservationRecord.observation_id, RawRecord.source_id)
         .join(
@@ -102,8 +113,8 @@ def load_inputs(session: Session, query: HistoryQuery):
     return records, metadata
 
 
-def load_history(session: Session, query: HistoryQuery):
-    return analyze(query, *load_inputs(session, query))
+def load_history(session: Session, query: HistoryQuery, max_records: int | None = None):
+    return analyze(query, *load_inputs(session, query, max_records))
 
 
 @router.post("")

@@ -36,7 +36,13 @@ services:
       context: ..
       dockerfile: infrastructure/backend.Dockerfile
     image: firescope-backend:local
-    environment: *backend-env
+    environment:
+      <<: *backend-env
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      AI_REQUESTS_PER_MINUTE: ${AI_REQUESTS_PER_MINUTE:-8}
+      AI_REQUESTS_PER_DAY: ${AI_REQUESTS_PER_DAY:-100}
+      AI_CONCURRENT_REQUESTS: ${AI_CONCURRENT_REQUESTS:-2}
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:

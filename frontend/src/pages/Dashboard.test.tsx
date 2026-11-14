@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import { api } from '../api';
 import { historyRequest } from '../history';
 import type { HistoryResult } from '../history';
+vi.mock('../components/AIIntelligencePanel', () => ({ default: () => <div>AI scientific intelligence</div> }));
 
 vi.mock('../components/RegionMap', () => ({ default: () => <div>Interactive region map</div> }));
 vi.mock('../components/ScientificChart', () => ({ default: () => <div>Scientific chart</div> }));

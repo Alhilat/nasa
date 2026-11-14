@@ -1,5 +1,9 @@
 # FireScope
 
+[Gemini scientific intelligence](docs/gemini-intelligence.md) adds a tool-grounded
+conversation and exportable AI reports to the dashboard. All measurements and statistics
+come from the Python analytical engine; the Gemini key stays on the FastAPI server.
+
 The [scientific dashboard](docs/dashboard.md) is the application's home route: a dark,
 responsive map workspace with region drawing, a burning-activity calendar, historical
 trends, descriptive anomalies, saved-grid comparisons and provenance-aware exports.

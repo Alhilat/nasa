@@ -18,6 +18,7 @@ from app.core.config import get_settings
 from app.db import get_session
 from app.dashboard_routes import router as dashboard_router
 from app.history_routes import router as history_router
+from app.intelligence.routes import AIBodyLimit, router as intelligence_router
 from app.models import (
     CalibrationModel, DataQualityReport, HarmonizedAggregate, Observation, ObservationRecord, ProcessingJob,
     RawRecord, Sensor, SourceFile,
@@ -28,6 +29,8 @@ settings = get_settings()
 app = FastAPI(title="FireScope API", version="0.1.0", docs_url="/docs")
 app.include_router(history_router)
 app.include_router(dashboard_router)
+app.include_router(intelligence_router)
+app.add_middleware(AIBodyLimit)
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origins,
     allow_methods=["GET", "POST"], allow_headers=["Content-Type"],
@@ -68,6 +71,7 @@ def configuration():
         "max_query_results": min(settings.max_query_results, 5000),
         "features": {"polygon_query": True, "grid_aggregation": True, "statistical_calibration": True,
                      "historical_intelligence": True, "anomalies": True,
+                     "generative_ai": bool(settings.gemini_api_key.get_secret_value()),
                      "forecasting": False, "machine_learning": False},
         "science_notes": SCIENCE_NOTES,
     }
