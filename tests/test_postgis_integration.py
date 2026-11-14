@@ -53,7 +53,13 @@ def factory():
         with engine.begin() as connection:
             config = Config(str(Path(__file__).parents[1] / "backend" / "alembic.ini"))
             config.attributes["connection"] = connection
+            config.attributes["version_table_schema"] = schema
             command.upgrade(config, "head")
+            # A public alembic_version must never cause this isolated schema to be skipped.
+            assert connection.scalar(text(
+                "SELECT n.nspname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                "WHERE c.oid='normalized_observations'::regclass"
+            )) == schema
         yield sessionmaker(engine, expire_on_commit=False)
     finally:
         engine.dispose()
@@ -281,3 +287,28 @@ def test_changed_measurement_and_processing_versions_are_not_merged(factory):
         source_url="https://example.org/synthetic-nrt", retrieved_at=datetime.now(UTC),
     )
     assert all(result["report"]["normalized_inserted"] == 1 for result in (first, changed, nrt))
+
+
+def test_calibration_registry_is_versioned_and_immutable(factory, tmp_path):
+    import hashlib
+    from app.models import CalibrationModel
+    from firescope_pipeline.calibration.io import register_bundle, write_json
+    from firescope_pipeline.calibration.models import fingerprint
+    core = {"method": "baseline", "algorithm_version": "test-only",
+            "metric": "test-only", "parameters": {}, "test_fixture": True}
+    model = {**core, "model_version": fingerprint(core)}
+    report = {"protocol": {"test_fixture": True}, "models": {"baseline": model},
+              "evaluations": {"baseline": {"status": "test_fixture"}},
+              "operational_calibration_supported": False, "operational_method": "baseline"}
+    write_json(tmp_path / "evaluation.json", report)
+    digest = hashlib.sha256((tmp_path / "evaluation.json").read_bytes()).hexdigest()
+    write_json(tmp_path / "manifest.json", {"study_id": "test-only", "input_provenance": [],
+        "activity_audit": {"coverage_mode": "test-only"}, "artifacts": {"evaluation.json": digest}})
+    register_bundle(factory, tmp_path)
+    register_bundle(factory, tmp_path)
+    with factory() as session:
+        saved = session.get(CalibrationModel, model["model_version"])
+        assert saved.status == "candidate_only"
+        assert saved.artifact == model
+    with pytest.raises(DBAPIError, match="immutable"), factory.begin() as session:
+        session.execute(text("UPDATE calibration_models SET status='supported_for_scope'"))

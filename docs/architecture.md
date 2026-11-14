@@ -60,3 +60,9 @@ All geometry uses longitude/latitude in EPSG:4326; acquisition times are timezon
 ## Scope and limits
 
 This is an operator-run local foundation. Import limit: 50 MiB / 250,000 rows per file. Aggregation limit: 1 million rows per job, in memory. The frontend plots at most 2,000 records and exports only that visible page with truncation metadata. The API returns at most 5,000 rows per observation page; summary statistics use the entire matching query. Large deployments need partitioning, spatial tiles, object storage instead of `bytea`, background execution, query budgets, controlled database roles and authenticated ingestion. See operations before exposing any service.
+
+## Statistical harmonization extension
+
+`firescope_pipeline/calibration/` separates equal-area cell-day activity, model fitting, blocked validation/uncertainty, input/bundle verification, reproducible source preparation, plotting and orchestration. The default database-backed observation API remains a raw/normalized sensor explorer; calibration estimates do not overwrite detections. Analysis runs can execute without a database, producing immutable-by-convention filesystem bundles in a new output directory.
+
+Migration `0003_calibration` adds immutable `calibration_models` keyed by the SHA-256 model version. Verified bundles can be registered as `analysis` jobs with fitted JSON artifacts, validation results and source provenance; summary evaluations also enter `analytical_results`. Optional curated exposure supports the primary metric. Without it, the activity proxy is explicitly conditional and can never qualify for operational calibration. See the methodology for acceptance gates and the measured reasons for declining both demonstrations.

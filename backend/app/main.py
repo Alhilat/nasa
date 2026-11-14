@@ -17,7 +17,7 @@ from app.catalog import SCIENCE_NOTES, SENSOR_CODES
 from app.core.config import get_settings
 from app.db import get_session
 from app.models import (
-    DataQualityReport, HarmonizedAggregate, Observation, ObservationRecord, ProcessingJob,
+    CalibrationModel, DataQualityReport, HarmonizedAggregate, Observation, ObservationRecord, ProcessingJob,
     RawRecord, Sensor, SourceFile,
 )
 from app.schemas import ObservationQuery
@@ -49,7 +49,7 @@ def liveness():
 def readiness(session: SessionDep):
     session.execute(text("SELECT PostGIS_Version()"))
     revision = session.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    if revision != "0002_ingestion":
+    if revision != "0003_calibration":
         raise HTTPException(503, "Database schema is not current")
     session.execute(select(Sensor.code).limit(1)).first()
     return {"status": "ready", "database": "connected", "schema_revision": revision}
@@ -61,7 +61,7 @@ def configuration():
         "name": "FireScope", "version": "0.1.0", "environment": settings.app_env,
         "crs": "EPSG:4326", "time_zone": "UTC", "sensor_codes": SENSOR_CODES,
         "max_query_results": min(settings.max_query_results, 5000),
-        "features": {"polygon_query": True, "grid_aggregation": True,
+        "features": {"polygon_query": True, "grid_aggregation": True, "statistical_calibration": True,
                      "anomalies": False, "forecasting": False, "machine_learning": False},
         "science_notes": SCIENCE_NOTES,
     }
@@ -189,6 +189,18 @@ def quality_report(job_id: UUID, session: SessionDep):
     if not report:
         raise HTTPException(404, "Data-quality report not found")
     return {"job_id": report.job_id, "source_id": report.source_id, "report": report.report}
+
+
+@app.get(f"{API}/calibration-models/{{model_version}}", tags=["analytics"])
+def calibration_model(model_version: str, session: SessionDep):
+    if len(model_version) != 64 or any(c not in "0123456789abcdef" for c in model_version):
+        raise HTTPException(422, "Model version must be a SHA-256 identifier")
+    model = session.get(CalibrationModel, model_version)
+    if model is None:
+        raise HTTPException(404, "Calibration model not found")
+    return {"model_version": model.model_version, "method": model.method, "status": model.status,
+            "artifact": model.artifact, "validation": model.validation,
+            "input_manifest": model.input_manifest}
 
 
 @app.get(f"{API}/aggregates/{{job_id}}", tags=["analytics"])

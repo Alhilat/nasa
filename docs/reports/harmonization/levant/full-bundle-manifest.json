@@ -1,0 +1,991 @@
+{
+  "activity_audit": {
+    "coverage_mode": "detection_only_conditional",
+    "crs": "EPSG:6933",
+    "detections_outside_boundary_within_grid": 12263,
+    "detections_outside_retained_grid": 17539,
+    "grid_size_m": 5000,
+    "input_rows": 224509,
+    "metric_version": "equal-area-cell-day-v1",
+    "min_common_observability_fraction": 0.8,
+    "missing_bins_imputed": false,
+    "not_burned_area": true,
+    "not_unique_fires": true,
+    "region_areas_km2": {
+      "JOR": 87913.76875754203,
+      "LBN": 9419.948512062661,
+      "SYR": 183408.23701427405
+    },
+    "retained_detection_rows": 194707,
+    "shared_boundary_cells_excluded": 148,
+    "unknown_daynight_excluded": 0
+  },
+  "artifacts": {
+    "all-pairs-including-missing.csv": "43ed99f7df47eae8265ddb3885e819d383f43c23207908435bb74faef04b2329",
+    "before-after.png": "eb2d716bf276135186b26bb9aa6a266d897ea6882eea0dcc56c1fbf9def7e874",
+    "before-after.svg": "1fc0f75e3136439b60f430e11deac6c3992e3168f45a967d285f783edfdba75a",
+    "candidate-predictions.csv": "69fd9e4696f49c2f7818030e7c3769d045d2c42fd44ed37e25e20300af141b4b",
+    "counts-to-common-activity.png": "55bd7f9de942cdcdf45f7aebbd223a19bf54f93d6dd5788915fefd721cca218c",
+    "evaluation.json": "ed14615503eb99ef1992764a34156dd1625e7dfee623b7df7873cf9b88759be0",
+    "grid-cells.csv": "694e3de8b2192307c9372b40c7a3e3e0825af2fda83856083764cc998bbfd749",
+    "heldout-metrics.png": "c8a7b2c95974101f5cdc1091f3d6fafb21df22eaf7d6b659d33f3168419ea6ec",
+    "model-baseline.json": "1a6528adb1319570fac66e2e63b6be4f65ce1eb4607775788be9d9e1795c0419",
+    "model-quantile_mapping.json": "ea140c5675f520a4a3edc9f86593d25464419061647f9ac460cbceb7668b7b7d",
+    "model-regression.json": "74bcd1e31317d1ce3b13c40c05fa6b344c253f73acc726c5eaddff6fd23dec8d",
+    "overlap-series.png": "718f1b387adfb0d20beebdebd601324c86853010228cc13325797f3eaf155dfc",
+    "protocol.json": "885af48d4c3ed930ecf8fe2ab3af361132e08fe5c3a75b650bf06bdae8d9ffbe",
+    "report.md": "06557f09a3b4e970c4cb4ef13da0cd0793fe24cbe73b58e456e1b9156bf47b34",
+    "sensor-monthly.csv": "bf5bc632e064e697b8ef4f8452da809ff308a1fc5cdb0e601f5bbe4d206c992b",
+    "sensor-observations.csv": "a4a4eeeace105d0734669294340c764e5f1b7b6af259b72e4e7a6e83705e9ad2"
+  },
+  "code_sha256": "4b3c4d34b0a0af009369e13cd9d9e971c01af6a337fab787921d9105fcc1480c",
+  "dependency_versions": {
+    "geopandas": "1.2.0",
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyproj": "3.8.0",
+    "shapely": "2.2.0"
+  },
+  "exposure_manifest_provided": false,
+  "input_provenance": [
+    {
+      "observed_versions": {
+        "6.2": 19
+      },
+      "path": "modis_2013_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 19,
+      "sensor": "MODIS",
+      "sha256": "c093fe5be6e68ed41e90e8ba3fc1d51c25375929b60e079866ca8ed42d50fbfd",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2013/modis_2013_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 2716
+      },
+      "path": "modis_2013_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 2716,
+      "sensor": "MODIS",
+      "sha256": "afe8e09cabf6ac09d88d9c94a5019f93b0efb4e1ad256beeb248c809cf8b118c",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2013/modis_2013_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 132
+      },
+      "path": "modis_2013_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 132,
+      "sensor": "MODIS",
+      "sha256": "f6509cd7a5b48bb389cebe9cb9b36f6c626a00b16d2f7a82346bd1e3390f9ca6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2013/modis_2013_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 566
+      },
+      "path": "viirs-snpp_2013_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 566,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "32b8f7c41f4e344dc74dd514f21faa6dad0b35b135f28295f676f74aebc72920",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2013/viirs-snpp_2013_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 14527
+      },
+      "path": "viirs-snpp_2013_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 14527,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "d31e9b30f103d02f774264e3aeff4d81672f40f5e540718b7966a5c62fb8e18d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2013/viirs-snpp_2013_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 946
+      },
+      "path": "viirs-snpp_2013_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 946,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "941082f4690ab5ce97a9f7459c4e1163f538af44a0939f63e685c0a93aa78087",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2013/viirs-snpp_2013_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 33
+      },
+      "path": "modis_2014_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 33,
+      "sensor": "MODIS",
+      "sha256": "975740601fafc05501da344c612e394c59814d446da93f28c7eb2a5f1d85e74c",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2014/modis_2014_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 777
+      },
+      "path": "modis_2014_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 777,
+      "sensor": "MODIS",
+      "sha256": "67a5f34ce2f6f7df05500e60eed97a2c27563f5d189bbe77ddd34c951f33e002",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2014/modis_2014_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 39
+      },
+      "path": "modis_2014_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 39,
+      "sensor": "MODIS",
+      "sha256": "b9a3e66ac6c2cd3f94c5c91d1986a4ab1f2911f937ba9377f8785f65be0a96d1",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2014/modis_2014_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 577
+      },
+      "path": "viirs-snpp_2014_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 577,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "d15356067ea3fd48f200727227d460d8dc798db43e61b6c512f86a499ebb7686",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2014/viirs-snpp_2014_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 7186
+      },
+      "path": "viirs-snpp_2014_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 7186,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "209d35551f747eb2d50a229d945b7a4e7f4cd45f745c3d196889bc6aa6d75d35",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2014/viirs-snpp_2014_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 595
+      },
+      "path": "viirs-snpp_2014_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 595,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "bcebf023816cef34cc5c5a8d68052607b89200d5fb771870619f8ec9df9edf17",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2014/viirs-snpp_2014_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 80
+      },
+      "path": "modis_2015_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 80,
+      "sensor": "MODIS",
+      "sha256": "e6c546d496de90bf92b250e218159577ba20ef844c16a8c7d939b231feede963",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2015/modis_2015_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 2082
+      },
+      "path": "modis_2015_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 2082,
+      "sensor": "MODIS",
+      "sha256": "f4316126e6fa1ff2f36405e59b70415e1305988756f784297ea730fe94147045",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2015/modis_2015_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 58
+      },
+      "path": "modis_2015_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 58,
+      "sensor": "MODIS",
+      "sha256": "c93a1bda27eed39fcf3d3aecda2e23814dbea7244cde4a844da961cbc4fe5238",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2015/modis_2015_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 738
+      },
+      "path": "viirs-snpp_2015_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 738,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "0c542b5bc295b17563a81043add4d3decf50ce7473f6cd02437d20eb783c6ba6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2015/viirs-snpp_2015_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 12577
+      },
+      "path": "viirs-snpp_2015_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 12577,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "cba85faaaf7e05e125903608d1aa454ec03d546691b70e2225dfcb8eaadf6d92",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2015/viirs-snpp_2015_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 677
+      },
+      "path": "viirs-snpp_2015_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 677,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "d859d8163c529def0ff9309821995fdf46f99f7f6187e94f69552a0c32e2f4cc",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2015/viirs-snpp_2015_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 43
+      },
+      "path": "modis_2016_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 43,
+      "sensor": "MODIS",
+      "sha256": "9d2727e6fe7abdea4519da0a7949ec556a465c2501210c38a0152fd43083ecd5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2016/modis_2016_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 1527
+      },
+      "path": "modis_2016_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 1527,
+      "sensor": "MODIS",
+      "sha256": "b86f59e31b7414b79f4cf0bb9a19db2a6aaeb5c940097804ce30938583d60a59",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2016/modis_2016_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 105
+      },
+      "path": "modis_2016_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 105,
+      "sensor": "MODIS",
+      "sha256": "e3c82bccd4226ecf1cd63e544a9c882946395f8c574b0b6a392ecf19f68fd404",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2016/modis_2016_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 716
+      },
+      "path": "viirs-snpp_2016_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 716,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "f46a239a9fc43c6b597edcb8210979f1e9b5553fc3f8dff9752e679e93fdca9f",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2016/viirs-snpp_2016_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 9622
+      },
+      "path": "viirs-snpp_2016_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 9622,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "e3728b129ac8a7d633ba3d61fad1b158c36628106d3e3950c8857e78bb4dd350",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2016/viirs-snpp_2016_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 880
+      },
+      "path": "viirs-snpp_2016_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 880,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "1903ca6385ba05a5b2c40de44d8f831df2ca349688b95c409cd113746587083a",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2016/viirs-snpp_2016_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 49
+      },
+      "path": "modis_2017_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 49,
+      "sensor": "MODIS",
+      "sha256": "5093a9fd73738f8ec18cb3622c59f94ba33ee111b6bb8a99b5472e4c7f1109dd",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2017/modis_2017_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 2251
+      },
+      "path": "modis_2017_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 2251,
+      "sensor": "MODIS",
+      "sha256": "c42a3876afd66dabb8965f8bcedd82f4691a221d41d3287235b6f97cd0545b08",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2017/modis_2017_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 42
+      },
+      "path": "modis_2017_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 42,
+      "sensor": "MODIS",
+      "sha256": "d1f8768a0b4c5c99ce786aa0399b47501ef250c625a6f4a6200c952283bca6a5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2017/modis_2017_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 574
+      },
+      "path": "viirs-snpp_2017_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 574,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "40f0f1b550421210a0d28749559b81a50560d5f1be5e57c5b3316f1d5f403ad6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2017/viirs-snpp_2017_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 12927
+      },
+      "path": "viirs-snpp_2017_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 12927,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "c7f0aa1f00f0cfc60f3bca0a7bd9e91e9d4a4f0f1f6da653aa9bd136572989ec",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2017/viirs-snpp_2017_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 553
+      },
+      "path": "viirs-snpp_2017_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 553,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "ad8c5af2e98243e69ceb595237ebd88304337b094ba7c404379f1c182d13360d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2017/viirs-snpp_2017_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 42
+      },
+      "path": "modis_2018_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 42,
+      "sensor": "MODIS",
+      "sha256": "9586da1f098491ca738bd1b02cbe3111bff110606989a74644fbca9aaa60878b",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2018/modis_2018_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 520
+      },
+      "path": "modis_2018_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 520,
+      "sensor": "MODIS",
+      "sha256": "5b28a0a2c52e53fecbc6016799820014919e396b7ae7e2332bd41531cdfff430",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2018/modis_2018_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 38
+      },
+      "path": "modis_2018_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 38,
+      "sensor": "MODIS",
+      "sha256": "362b9d81ad16090c5512267114129401dd2429c90c4662689a879d849c7a19b5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2018/modis_2018_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 490
+      },
+      "path": "viirs-snpp_2018_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 490,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "c221eef9d02d0ee0304c6cf6120056ebd5479f5fb8904789aae6472214bc98bb",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2018/viirs-snpp_2018_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 8296
+      },
+      "path": "viirs-snpp_2018_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 8296,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "6f9f4541969b5c53fe7bd6736a536af34d05d27393bdb1030ea8b5fbb70070f7",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2018/viirs-snpp_2018_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 511
+      },
+      "path": "viirs-snpp_2018_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 511,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "1529e603a76cad59a4327ed29c09d01052fcbb400ad18e52d3059f417f8a08f7",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2018/viirs-snpp_2018_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 53
+      },
+      "path": "modis_2019_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 53,
+      "sensor": "MODIS",
+      "sha256": "d5df3ba4a6acbe01ba365cfd51669542d974572535d8630eefd8968822a10de2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2019/modis_2019_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 5872
+      },
+      "path": "modis_2019_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 5872,
+      "sensor": "MODIS",
+      "sha256": "cf85327c1b13854b22d69c3102aecec07e642956dafb632bf089fb3c186ce7cd",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2019/modis_2019_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 74
+      },
+      "path": "modis_2019_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 74,
+      "sensor": "MODIS",
+      "sha256": "67e17739f37e94f85c9c12ccfc04fec7b8225324b16193bab6b79402faf41fec",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2019/modis_2019_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 641
+      },
+      "path": "viirs-snpp_2019_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 641,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "e63d975e21eac3d4921a77b4de2adab8fb7164fa715b2bf5351c2f4209dbe84d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2019/viirs-snpp_2019_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 34478
+      },
+      "path": "viirs-snpp_2019_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 34478,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "637538df1305a7e35e37082e8b74b5ddfc2575c4aa443a6626097141d6242731",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2019/viirs-snpp_2019_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 590
+      },
+      "path": "viirs-snpp_2019_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 590,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "e5af64c1dfc39e5b10d3e76ae7d41589ea93780832670fe22b657717c010e9b1",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2019/viirs-snpp_2019_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 54
+      },
+      "path": "modis_2020_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 54,
+      "sensor": "MODIS",
+      "sha256": "98bca2d9685c982b70d816a6e05185b084acf4c48a98f070ce1a5d5b75526e0d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2020/modis_2020_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 3394
+      },
+      "path": "modis_2020_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 3394,
+      "sensor": "MODIS",
+      "sha256": "80f3db2d65155d25d8abad37b14104614d6343fbd196e13377caf190bac9d426",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2020/modis_2020_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 142
+      },
+      "path": "modis_2020_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 142,
+      "sensor": "MODIS",
+      "sha256": "ce12267ef193a5c91026d57fb0d309d672cf93da19eaa6d13eaf1bd7ebdb495d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2020/modis_2020_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 816
+      },
+      "path": "viirs-snpp_2020_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 816,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "dbcbf3e844f8388821931b367ddb1c20e7613dfb979e2fdd072bf7e5debd02c2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2020/viirs-snpp_2020_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 23070
+      },
+      "path": "viirs-snpp_2020_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 23070,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "a001ef0b394366526caa24b59680e07d44102c56d76e1de140fbb07193531319",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2020/viirs-snpp_2020_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 701
+      },
+      "path": "viirs-snpp_2020_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 701,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "30635e3b8a91a99e739722e824ed16ea74586e9f6631dff7174008c261077733",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2020/viirs-snpp_2020_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 42
+      },
+      "path": "modis_2021_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 42,
+      "sensor": "MODIS",
+      "sha256": "35de1330ee38170e8d7bba8a964c1d373bb35005c0d250a864b6a7ed31776e14",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2021/modis_2021_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 609
+      },
+      "path": "modis_2021_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 609,
+      "sensor": "MODIS",
+      "sha256": "655e70025e13509edd5651966529fedc9cea83f43c0c2c3fbfb4fa7b0bca44cc",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2021/modis_2021_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 134
+      },
+      "path": "modis_2021_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 134,
+      "sensor": "MODIS",
+      "sha256": "c1049310ee89c44c57f40b12137b535687f1e0438b1bf188c144b298dbd8b908",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2021/modis_2021_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 686
+      },
+      "path": "viirs-snpp_2021_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 686,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "7461afefa8d155f0a5402ed93ef573e72fc75215053c1f7b076166ac3ec8cda8",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2021/viirs-snpp_2021_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 11030
+      },
+      "path": "viirs-snpp_2021_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 11030,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "869574ed6719ccacdfb2a51a2c92c3275a0f4d8d9cc4065f3ef76d0535e89270",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2021/viirs-snpp_2021_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 891
+      },
+      "path": "viirs-snpp_2021_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 891,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "e6fa95dad482c245cd92a00c6fe7b5fa12bb3489bf312c940602a4208cf5f404",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2021/viirs-snpp_2021_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 33
+      },
+      "path": "modis_2022_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 33,
+      "sensor": "MODIS",
+      "sha256": "f9b68f32ca10d9c6c821efa2d9e2928f46875cfa5102182b0c653f19a69557e3",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2022/modis_2022_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 335
+      },
+      "path": "modis_2022_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 335,
+      "sensor": "MODIS",
+      "sha256": "d53be9d26dc50589397d9a44c9c607ca4fced624d390624582318096981f836d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2022/modis_2022_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 29
+      },
+      "path": "modis_2022_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 29,
+      "sensor": "MODIS",
+      "sha256": "06acdc83746c947d05be01df8f201d3103493d17101dfadaf19565849aeb68ef",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2022/modis_2022_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 672
+      },
+      "path": "viirs-snpp_2022_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 672,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "4a14535985274cefc95d0d0630afe770d9e988b2a067bd233af8c457e9192a5e",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2022/viirs-snpp_2022_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 8913
+      },
+      "path": "viirs-snpp_2022_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 8913,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "9b23efc63b7d6e37a1f9d6056586e13d4655226a98f710a678c8c5f02e1a96b2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2022/viirs-snpp_2022_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 447
+      },
+      "path": "viirs-snpp_2022_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 447,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "deb8cd62868f89619d3435140e10a471435a8f73e14a41c68b160b98316dc2f5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2022/viirs-snpp_2022_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 45
+      },
+      "path": "modis_2023_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 45,
+      "sensor": "MODIS",
+      "sha256": "713b7f6290bdb4389bccefdca0cd56915eaf18e5789442f6e1ae68fa21621258",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2023/modis_2023_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 1486
+      },
+      "path": "modis_2023_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 1486,
+      "sensor": "MODIS",
+      "sha256": "8bd2f1bdda70973b6841bf443df292a56676a708ff23d624c4134a7ce1ddddd0",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2023/modis_2023_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 78
+      },
+      "path": "modis_2023_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 78,
+      "sensor": "MODIS",
+      "sha256": "700e16bdaa70e9a73aefe365377590b2dcf50544358c3e0e768d18c6bc2a9ce5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2023/modis_2023_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 626
+      },
+      "path": "viirs-snpp_2023_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 626,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "69a6465bf85f06661bc256157c12ecd063ba1e588124ec8bb83d387b8b5acfd5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2023/viirs-snpp_2023_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 12989
+      },
+      "path": "viirs-snpp_2023_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 12989,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "b64bbe29d02582c678b782232ca0d1dcbd323d438ef868a2a59d6abcda774a8e",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2023/viirs-snpp_2023_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 657
+      },
+      "path": "viirs-snpp_2023_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 657,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "686c8ef72c04f8be2e6daa4b3c20d282a1f5cd7d0be68c68d3032f74186285ef",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2023/viirs-snpp_2023_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 66
+      },
+      "path": "modis_2024_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 66,
+      "sensor": "MODIS",
+      "sha256": "8283d9d4c9841150d48ef7a223af18993df6ca9820eaf0bac629d87af99aa4c7",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 1977
+      },
+      "path": "modis_2024_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 1977,
+      "sensor": "MODIS",
+      "sha256": "5a9dd9130c5478ad8fe530596dad26cb97b17cd20dd2d6c2ea0f647177e9a236",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 229
+      },
+      "path": "modis_2024_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 229,
+      "sensor": "MODIS",
+      "sha256": "6991a28db3c8c94d90c8f5b086b493e48dacdd37aaf0ab37257ffa7d79eaffb2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 739
+      },
+      "path": "viirs-snpp_2024_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 739,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "bfb91462687351e171b66ccd73ea2c08f2455fcdd446f51102b37f5d68235d5c",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2024/viirs-snpp_2024_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 15526
+      },
+      "path": "viirs-snpp_2024_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 15526,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "f96060947404bdb1927bf4c241910b82fd50c1614597822e9bf9976ff1d9bdbe",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2024/viirs-snpp_2024_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 1257
+      },
+      "path": "viirs-snpp_2024_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 1257,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "1997ad36a7731bbc08ae2d231aede3b6ab881f57fe1d321dd24f2801390db0b5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2024/viirs-snpp_2024_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 68
+      },
+      "path": "modis_2025_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 68,
+      "sensor": "MODIS",
+      "sha256": "1914ea2e8ba78c6730714758299aaabdd98fe6665ac1a5b1b63746d898faba1b",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2025/modis_2025_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 1158
+      },
+      "path": "modis_2025_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 1158,
+      "sensor": "MODIS",
+      "sha256": "43292251a7bb5058ea3f05d7913416701a76dcc053b8aacc5541d82546613370",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2025/modis_2025_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 91
+      },
+      "path": "modis_2025_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 91,
+      "sensor": "MODIS",
+      "sha256": "24a13a2913892dee7df05649d7ef0b5db1651d354de9f100c73cf30685c6ad75",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2025/modis_2025_Lebanon.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 757
+      },
+      "path": "viirs-snpp_2025_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 757,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "fbc6774f08105badfb3261323bae73637296d16beb36d07fc986317bd094ccd6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2025/viirs-snpp_2025_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 8959
+      },
+      "path": "viirs-snpp_2025_Syria.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 8959,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "228c9d9d114f0f54f5bbbaa1e8838e8c37a15d670a07c2e886de755b9c0ef881",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2025/viirs-snpp_2025_Syria.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 584
+      },
+      "path": "viirs-snpp_2025_Lebanon.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 584,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "b9e2c7b90729e63edc4b2b022b304cdd8b5bac58dcc712708ac386662c04be57",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2025/viirs-snpp_2025_Lebanon.csv"
+    }
+  ],
+  "region_geometry_sha256": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+  "study_id": "82a022bddd1b0221fc3e5dc75990627db31e8447d434b415fcd37ea23cf1146b"
+}

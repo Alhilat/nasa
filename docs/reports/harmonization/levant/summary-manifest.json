@@ -1,0 +1,24 @@
+{
+  "kind": "curated_report_summary",
+  "study_id": "82a022bddd1b0221fc3e5dc75990627db31e8447d434b415fcd37ea23cf1146b",
+  "full_bundle": "reports/harmonization/levant-v1",
+  "artifacts": {
+    "all-pairs-including-missing.csv": "43ed99f7df47eae8265ddb3885e819d383f43c23207908435bb74faef04b2329",
+    "before-after.png": "eb2d716bf276135186b26bb9aa6a266d897ea6882eea0dcc56c1fbf9def7e874",
+    "before-after.svg": "1fc0f75e3136439b60f430e11deac6c3992e3168f45a967d285f783edfdba75a",
+    "candidate-predictions.csv": "69fd9e4696f49c2f7818030e7c3769d045d2c42fd44ed37e25e20300af141b4b",
+    "counts-to-common-activity.png": "55bd7f9de942cdcdf45f7aebbd223a19bf54f93d6dd5788915fefd721cca218c",
+    "evaluation.json": "ed14615503eb99ef1992764a34156dd1625e7dfee623b7df7873cf9b88759be0",
+    "full-bundle-manifest.json": "07feb317f962382d2e6d3090a60372394d49510d1711b24b085e4b151d7d93f6",
+    "heldout-metrics.png": "c8a7b2c95974101f5cdc1091f3d6fafb21df22eaf7d6b659d33f3168419ea6ec",
+    "model-baseline.json": "1a6528adb1319570fac66e2e63b6be4f65ce1eb4607775788be9d9e1795c0419",
+    "model-quantile_mapping.json": "ea140c5675f520a4a3edc9f86593d25464419061647f9ac460cbceb7668b7b7d",
+    "model-regression.json": "74bcd1e31317d1ce3b13c40c05fa6b344c253f73acc726c5eaddff6fd23dec8d",
+    "overlap-series.png": "718f1b387adfb0d20beebdebd601324c86853010228cc13325797f3eaf155dfc",
+    "protocol.json": "885af48d4c3ed930ecf8fe2ab3af361132e08fe5c3a75b650bf06bdae8d9ffbe",
+    "regions.geojson": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+    "report.md": "5f2806d27b09156a5cbdcba11d386408dab08b68279cf56d0c3e064457543284",
+    "sensor-monthly.csv": "bf5bc632e064e697b8ef4f8452da809ff308a1fc5cdb0e601f5bbe4d206c992b",
+    "source-files.json": "afe2f0c93d05c881ced0cce232c3f0aac0a942386075ccacd5f7606c108de033"
+  }
+}

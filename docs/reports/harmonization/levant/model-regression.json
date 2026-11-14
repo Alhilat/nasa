@@ -1,0 +1,68 @@
+{
+  "algorithm_version": "sensor-calibration-v1",
+  "bounded_occupancy": false,
+  "context": {
+    "code_sha256": "4b3c4d34b0a0af009369e13cd9d9e971c01af6a337fab787921d9105fcc1480c",
+    "daynight": "D",
+    "grid_size_m": 5000,
+    "native_product_versions": {
+      "MODIS_AQUA": [
+        "6.03",
+        "6.2",
+        "61.03"
+      ],
+      "MODIS_TERRA": [
+        "6.03",
+        "6.2",
+        "61.03"
+      ],
+      "VIIRS_SNPP": [
+        "2"
+      ]
+    },
+    "reference": "MODIS_AQUA",
+    "region_geometry_sha256": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+    "source": "VIIRS_SNPP"
+  },
+  "method": "regression",
+  "metric": "reported_cell_days_per_1000km2_month",
+  "model_version": "5a7e5c804350fbb1254aef46a47ff47d2fe911566e11ca65a51acd16d2b53ac7",
+  "parameters": {
+    "coefficients": [
+      -0.06307148574819911,
+      0.3892103393892446,
+      0.010386187367240394,
+      0.03880591395513554,
+      -0.015924829608995352,
+      0.02330890086360323
+    ],
+    "features": [
+      "intercept",
+      "log1p_source",
+      "sin1",
+      "cos1",
+      "sin2",
+      "cos2"
+    ],
+    "response": "log1p"
+  },
+  "source_range": [
+    0.011374782518514327,
+    12.8347561610158
+  ],
+  "training_hash": "7888af416be6f868548f2b851b1d81dc6415334687625cbe8532b59ecb34562e",
+  "training_pairs": 125,
+  "training_regions": [
+    "JOR",
+    "SYR"
+  ],
+  "training_years": [
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+  ]
+}

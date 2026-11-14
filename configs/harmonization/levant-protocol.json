@@ -1,0 +1,23 @@
+{
+  "start": "2013-01-01T00:00:00Z",
+  "end": "2026-01-01T00:00:00Z",
+  "source": "VIIRS_SNPP",
+  "reference": "MODIS_AQUA",
+  "daynight": "D",
+  "grid_size_m": 5000,
+  "min_coverage": 0.8,
+  "allow_product_transition_evaluation": true,
+  "validation": {
+    "train_years": [2013, 2014, 2015, 2016, 2017, 2018, 2019],
+    "validation_years": [2020, 2021],
+    "test_years": [2022, 2023, 2024, 2025],
+    "heldout_regions": ["LBN"],
+    "seed": 2026,
+    "bootstrap_repeats": 200,
+    "min_training_pairs": 24,
+    "min_evaluation_pairs": 8,
+    "min_trend_months": 6,
+    "min_improvement": 0.1,
+    "max_extrapolation_fraction": 0.1
+  }
+}

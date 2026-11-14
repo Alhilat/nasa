@@ -167,3 +167,17 @@ class AnalyticalResult(Base):
     result: Mapped[dict[str, Any]] = mapped_column(JSONB)
     uncertainty: Mapped[dict[str, Any]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CalibrationModel(Base):
+    __tablename__ = "calibration_models"
+    model_version: Mapped[str] = mapped_column(primary_key=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("processing_jobs.id"))
+    method: Mapped[str]
+    algorithm_version: Mapped[str]
+    metric: Mapped[str]
+    status: Mapped[str]
+    artifact: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    validation: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    input_manifest: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

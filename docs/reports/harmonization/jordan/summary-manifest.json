@@ -1,0 +1,24 @@
+{
+  "kind": "curated_report_summary",
+  "study_id": "55c5649b67efaceb575ddfd6219203584e79f151dae4ddef8a24794c28caa0ab",
+  "full_bundle": "reports/harmonization/jordan-v1",
+  "artifacts": {
+    "all-pairs-including-missing.csv": "cca9d6b726e553b06212cb72542ac87ebd9de26ac92188c40a0147887454d278",
+    "before-after.png": "b845063a0f56583db7febc4b64bc475b8be2697aa62df915b412463d225bfc68",
+    "before-after.svg": "8fccf933d59ec877008f1b0681d2cda96e3fcc8668040fc31e264b7bc1d19081",
+    "candidate-predictions.csv": "e69b20da63d33ce41bf2f91f34708a27c09a34be4f782a4a2011da9b6820d783",
+    "counts-to-common-activity.png": "2d3823b987c78ad8f47b3680a470d733625b699a5faf77fc5d0c2d071fa84fc2",
+    "evaluation.json": "77a6f230a3c7205ec55e92b7061c2bf551f20ab284b3dda7fe59b06e994af56d",
+    "full-bundle-manifest.json": "be9c91a76324ad25e2109f57f482850b70a26505155813a50a2be0ce5e1a4084",
+    "heldout-metrics.png": "401848b487197849842910e479f6805ca1567f1741696df4420fd82e79bfc0ac",
+    "model-baseline.json": "ac33725b1d50bd6cccc291ba798e587e4ecf96ddc2ea0077b2b98abdb967ab66",
+    "model-quantile_mapping.json": "10759ec97e6b220be3f699bfcb2a52dfcb1b4144e4719231be30ce7bbf8ea2bc",
+    "model-regression.json": "2edf2410f78c704497580e4a7e64a31b98581969d4460ef314b58d6d3c187545",
+    "overlap-series.png": "17e222ce79c3466107529e26bc4620c61445d033c611177954996f4dd8a0467d",
+    "protocol.json": "efab612b942985ac10228898bcc7322155a32800b9768acc5a02308d4c099130",
+    "regions.geojson": "27ea8c63a867a6a809bff155d20cef98915f3a4668718c0d44eecd19ea99f784",
+    "report.md": "95c78ebc6c7ef710586262a9d1aabed86c914cf714b02d56a20bef61b90f5108",
+    "sensor-monthly.csv": "5c389e4a948c0bf49eb3e3ce8dad106de153c69571d22e6ccadadb3d4a42135c",
+    "source-files.json": "d1ed6d212dd4fa32aafd9c86cb86ad553d9c0baa0e2e0427d66ed098bcdb0f42"
+  }
+}

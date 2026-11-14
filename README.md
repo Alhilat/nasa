@@ -4,6 +4,12 @@ Satellite Fire Intelligence Platform foundation for the NASA Space Apps Challeng
 
 FireScope archives original FIRMS CSV files, separates raw records from normalized observations, supports geographic exploration, and produces reproducible sensor/day/grid summaries. Optional MAP_KEY API synchronization supports recent observations with retries and transactional checkpoints. **No scientific observations are bundled, generated, or downloaded automatically. No machine learning is implemented.** Test fixtures are explicitly synthetic and isolated from the application archive.
 
+## MODIS/VIIRS statistical harmonization
+
+The validation-first calibration module compares baseline equal-area aggregation, seasonal regression and seasonal quantile mapping. It retains sensor-specific results, null missing bins, blocked year/region tests, error metrics, trend checks, bootstrap intervals and content-addressed model versions. **Lower agreement error does not automatically approve a calibration.** The real Jordan and supplementary Levant demonstrations both decline operational use.
+
+See [the methodology and exact reproduction commands](docs/harmonization-methodology.md). The primary occupancy metric requires independently curated common-cell-day exposure. Detection-only CSVs support an explicitly conditional proxy, with no invented zeros or physical fire counts. Before/after figures and measured result summaries are under `docs/reports/harmonization/`; see [the measured findings](docs/harmonization-results.md).
+
 ## Repository
 
 ```text
@@ -16,6 +22,8 @@ infrastructure/   Dockerfiles, PostGIS Compose stack, SPA server configuration
 ```
 
 ## Start with Docker (recommended)
+
+For the existing portable installation on the development workstation, see [Windows local runtime and restart commands](docs/local-runtime.md).
 
 Install Docker Engine/Desktop with Compose v2. Run every command below from the repository root. The stack uses PostgreSQL 17 + PostGIS 3.5, builds the API and UI, and applies migrations before starting the API.
 

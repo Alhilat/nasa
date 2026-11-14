@@ -1,0 +1,368 @@
+{
+  "activity_audit": {
+    "coverage_mode": "detection_only_conditional",
+    "crs": "EPSG:6933",
+    "detections_outside_boundary_within_grid": 264,
+    "detections_outside_retained_grid": 217,
+    "grid_size_m": 5000,
+    "input_rows": 9225,
+    "metric_version": "equal-area-cell-day-v1",
+    "min_common_observability_fraction": 0.8,
+    "missing_bins_imputed": false,
+    "not_burned_area": true,
+    "not_unique_fires": true,
+    "region_areas_km2": {
+      "JOR_northeast": 23805.85542156598,
+      "JOR_northwest": 18903.857986708903,
+      "JOR_southeast": 7377.720230306724,
+      "JOR_southwest": 36828.206411278414
+    },
+    "retained_detection_rows": 8744,
+    "shared_boundary_cells_excluded": 90,
+    "unknown_daynight_excluded": 0
+  },
+  "artifacts": {
+    "all-pairs-including-missing.csv": "cca9d6b726e553b06212cb72542ac87ebd9de26ac92188c40a0147887454d278",
+    "before-after.png": "b845063a0f56583db7febc4b64bc475b8be2697aa62df915b412463d225bfc68",
+    "before-after.svg": "8fccf933d59ec877008f1b0681d2cda96e3fcc8668040fc31e264b7bc1d19081",
+    "candidate-predictions.csv": "e69b20da63d33ce41bf2f91f34708a27c09a34be4f782a4a2011da9b6820d783",
+    "counts-to-common-activity.png": "2d3823b987c78ad8f47b3680a470d733625b699a5faf77fc5d0c2d071fa84fc2",
+    "evaluation.json": "77a6f230a3c7205ec55e92b7061c2bf551f20ab284b3dda7fe59b06e994af56d",
+    "grid-cells.csv": "0fc01fc63f37e179a32ecd0899ea3444fa355417bb3c1a6024acc4c66b75e30c",
+    "heldout-metrics.png": "401848b487197849842910e479f6805ca1567f1741696df4420fd82e79bfc0ac",
+    "model-baseline.json": "ac33725b1d50bd6cccc291ba798e587e4ecf96ddc2ea0077b2b98abdb967ab66",
+    "model-quantile_mapping.json": "10759ec97e6b220be3f699bfcb2a52dfcb1b4144e4719231be30ce7bbf8ea2bc",
+    "model-regression.json": "2edf2410f78c704497580e4a7e64a31b98581969d4460ef314b58d6d3c187545",
+    "overlap-series.png": "17e222ce79c3466107529e26bc4620c61445d033c611177954996f4dd8a0467d",
+    "protocol.json": "efab612b942985ac10228898bcc7322155a32800b9768acc5a02308d4c099130",
+    "report.md": "95600f3438829cf1cba3b466c624e8ebdf604d81c7c67e9cc91f97d7dd688995",
+    "sensor-monthly.csv": "5c389e4a948c0bf49eb3e3ce8dad106de153c69571d22e6ccadadb3d4a42135c",
+    "sensor-observations.csv": "4a2c4cb487f3aa2458aa32c7904dd4e9de2687d4a1520c0d05eab1caa8b5a13e"
+  },
+  "code_sha256": "4b3c4d34b0a0af009369e13cd9d9e971c01af6a337fab787921d9105fcc1480c",
+  "dependency_versions": {
+    "geopandas": "1.2.0",
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyproj": "3.8.0",
+    "shapely": "2.2.0"
+  },
+  "exposure_manifest_provided": false,
+  "input_provenance": [
+    {
+      "observed_versions": {
+        "6.2": 19
+      },
+      "path": "modis_2013_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 19,
+      "sensor": "MODIS",
+      "sha256": "c093fe5be6e68ed41e90e8ba3fc1d51c25375929b60e079866ca8ed42d50fbfd",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2013/modis_2013_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 566
+      },
+      "path": "viirs-snpp_2013_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 566,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "32b8f7c41f4e344dc74dd514f21faa6dad0b35b135f28295f676f74aebc72920",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2013/viirs-snpp_2013_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 33
+      },
+      "path": "modis_2014_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 33,
+      "sensor": "MODIS",
+      "sha256": "975740601fafc05501da344c612e394c59814d446da93f28c7eb2a5f1d85e74c",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2014/modis_2014_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 577
+      },
+      "path": "viirs-snpp_2014_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 577,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "d15356067ea3fd48f200727227d460d8dc798db43e61b6c512f86a499ebb7686",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2014/viirs-snpp_2014_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 80
+      },
+      "path": "modis_2015_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 80,
+      "sensor": "MODIS",
+      "sha256": "e6c546d496de90bf92b250e218159577ba20ef844c16a8c7d939b231feede963",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2015/modis_2015_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 738
+      },
+      "path": "viirs-snpp_2015_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 738,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "0c542b5bc295b17563a81043add4d3decf50ce7473f6cd02437d20eb783c6ba6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2015/viirs-snpp_2015_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 43
+      },
+      "path": "modis_2016_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 43,
+      "sensor": "MODIS",
+      "sha256": "9d2727e6fe7abdea4519da0a7949ec556a465c2501210c38a0152fd43083ecd5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2016/modis_2016_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 716
+      },
+      "path": "viirs-snpp_2016_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 716,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "f46a239a9fc43c6b597edcb8210979f1e9b5553fc3f8dff9752e679e93fdca9f",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2016/viirs-snpp_2016_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.2": 49
+      },
+      "path": "modis_2017_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 49,
+      "sensor": "MODIS",
+      "sha256": "5093a9fd73738f8ec18cb3622c59f94ba33ee111b6bb8a99b5472e4c7f1109dd",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2017/modis_2017_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 574
+      },
+      "path": "viirs-snpp_2017_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 574,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "40f0f1b550421210a0d28749559b81a50560d5f1be5e57c5b3316f1d5f403ad6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2017/viirs-snpp_2017_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 42
+      },
+      "path": "modis_2018_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 42,
+      "sensor": "MODIS",
+      "sha256": "9586da1f098491ca738bd1b02cbe3111bff110606989a74644fbca9aaa60878b",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2018/modis_2018_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 490
+      },
+      "path": "viirs-snpp_2018_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 490,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "c221eef9d02d0ee0304c6cf6120056ebd5479f5fb8904789aae6472214bc98bb",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2018/viirs-snpp_2018_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 53
+      },
+      "path": "modis_2019_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 53,
+      "sensor": "MODIS",
+      "sha256": "d5df3ba4a6acbe01ba365cfd51669542d974572535d8630eefd8968822a10de2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2019/modis_2019_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 641
+      },
+      "path": "viirs-snpp_2019_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 641,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "e63d975e21eac3d4921a77b4de2adab8fb7164fa715b2bf5351c2f4209dbe84d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2019/viirs-snpp_2019_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 54
+      },
+      "path": "modis_2020_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 54,
+      "sensor": "MODIS",
+      "sha256": "98bca2d9685c982b70d816a6e05185b084acf4c48a98f070ce1a5d5b75526e0d",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2020/modis_2020_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 816
+      },
+      "path": "viirs-snpp_2020_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 816,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "dbcbf3e844f8388821931b367ddb1c20e7613dfb979e2fdd072bf7e5debd02c2",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2020/viirs-snpp_2020_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 42
+      },
+      "path": "modis_2021_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 42,
+      "sensor": "MODIS",
+      "sha256": "35de1330ee38170e8d7bba8a964c1d373bb35005c0d250a864b6a7ed31776e14",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2021/modis_2021_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 686
+      },
+      "path": "viirs-snpp_2021_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 686,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "7461afefa8d155f0a5402ed93ef573e72fc75215053c1f7b076166ac3ec8cda8",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2021/viirs-snpp_2021_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "6.03": 33
+      },
+      "path": "modis_2022_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 33,
+      "sensor": "MODIS",
+      "sha256": "f9b68f32ca10d9c6c821efa2d9e2928f46875cfa5102182b0c653f19a69557e3",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2022/modis_2022_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 672
+      },
+      "path": "viirs-snpp_2022_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 672,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "4a14535985274cefc95d0d0630afe770d9e988b2a067bd233af8c457e9192a5e",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2022/viirs-snpp_2022_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 45
+      },
+      "path": "modis_2023_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 45,
+      "sensor": "MODIS",
+      "sha256": "713b7f6290bdb4389bccefdca0cd56915eaf18e5789442f6e1ae68fa21621258",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2023/modis_2023_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 626
+      },
+      "path": "viirs-snpp_2023_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 626,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "69a6465bf85f06661bc256157c12ecd063ba1e588124ec8bb83d387b8b5acfd5",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2023/viirs-snpp_2023_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 66
+      },
+      "path": "modis_2024_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 66,
+      "sensor": "MODIS",
+      "sha256": "8283d9d4c9841150d48ef7a223af18993df6ca9820eaf0bac629d87af99aa4c7",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 739
+      },
+      "path": "viirs-snpp_2024_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 739,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "bfb91462687351e171b66ccd73ea2c08f2455fcdd446f51102b37f5d68235d5c",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2024/viirs-snpp_2024_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "61.03": 68
+      },
+      "path": "modis_2025_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 68,
+      "sensor": "MODIS",
+      "sha256": "1914ea2e8ba78c6730714758299aaabdd98fe6665ac1a5b1b63746d898faba1b",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2025/modis_2025_Jordan.csv"
+    },
+    {
+      "observed_versions": {
+        "2": 757
+      },
+      "path": "viirs-snpp_2025_Jordan.csv",
+      "processing_level": "standard",
+      "product_version": "native",
+      "raw_rows": 757,
+      "sensor": "VIIRS_SNPP",
+      "sha256": "fbc6774f08105badfb3261323bae73637296d16beb36d07fc986317bd094ccd6",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2025/viirs-snpp_2025_Jordan.csv"
+    }
+  ],
+  "region_geometry_sha256": "27ea8c63a867a6a809bff155d20cef98915f3a4668718c0d44eecd19ea99f784",
+  "study_id": "55c5649b67efaceb575ddfd6219203584e79f151dae4ddef8a24794c28caa0ab"
+}

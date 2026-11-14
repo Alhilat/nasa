@@ -31,7 +31,7 @@ Quantitative uncertainty is explicitly null. Per-observation and aggregate JSON 
 
 The explorer shows unadjusted daily counts per native sensor and archive filters. Only days with observations appear; missing bins are not filled with zeros. Missing detections can reflect cloud/smoke cover, overpass timing or detection limits. Observation counts alone cannot establish coverage or fire absence.
 
-Seasonal climatologies, anomaly scores, bias correction and forecasts are intentionally deferred until study regions, baseline periods, observation coverage and validated sensor harmonization methods are specified. The analytical-results schema supports versioned future work but contains no seeded scientific output. No machine learning code or models are included.
+An experimental classical statistical calibration workflow now evaluates baseline aggregation, seasonality-aware regression and quantile mapping with blocked year/region holdouts. It produces separately versioned candidate estimates and refuses operational calibration when observability, product scope, holdout support or trend stability is inadequate. Physical uncertainty in original observations remains unknown; bootstrap intervals describe only statistical mapping/agreement variability. Seasonal climatologies, anomaly scores and forecasting remain deferred. See [the full calibration methodology](harmonization-methodology.md).
 
 ## Primary sources
 

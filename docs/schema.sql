@@ -277,4 +277,29 @@ CREATE TRIGGER immutable_truncate_data_quality_reports BEFORE TRUNCATE ON data_q
 
 UPDATE alembic_version SET version_num='0002_ingestion' WHERE alembic_version.version_num = '0001_foundation';
 
+-- Running upgrade 0002_ingestion -> 0003_calibration
+
+CREATE TABLE calibration_models (
+        model_version text PRIMARY KEY CHECK (model_version ~ '^[a-f0-9]{64}$'),
+        job_id uuid NOT NULL REFERENCES processing_jobs(id),
+        method text NOT NULL CHECK (method IN ('baseline','regression','quantile_mapping')),
+        algorithm_version text NOT NULL,
+        metric text NOT NULL,
+        status text NOT NULL CHECK (status IN ('candidate_only','supported_for_scope')),
+        artifact jsonb NOT NULL,
+        validation jsonb NOT NULL,
+        input_manifest jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    );
+
+CREATE TRIGGER immutable_calibration_models
+        BEFORE UPDATE OR DELETE ON calibration_models
+        FOR EACH ROW EXECUTE FUNCTION reject_source_mutation();
+
+CREATE TRIGGER immutable_truncate_calibration_models
+        BEFORE TRUNCATE ON calibration_models
+        FOR EACH STATEMENT EXECUTE FUNCTION reject_source_mutation();
+
+UPDATE alembic_version SET version_num='0003_calibration' WHERE alembic_version.version_num = '0002_ingestion';
+
 COMMIT;

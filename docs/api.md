@@ -13,6 +13,7 @@ Base URL: `http://localhost:8000/api/v1`. OpenAPI and interactive documentation:
 | `GET /observations/{id}` | Original fields, source hash/URL, version, uncertainty, record hash and all linked source copies |
 | `POST /analytics/summary` | Counts, known FRP summary and UTC daily counts for the full matching query |
 | `GET /sources?limit=50&offset=0` | Source archive metadata; excludes original binary payload |
+| `GET /calibration-models/{sha256}` | Registered immutable statistical model artifact and validation scope; candidates are not automatically enabled |
 | `GET /quality-reports/{job_id}` | Immutable per-import quality report, including rejected imports |
 | `GET /jobs?limit=50` | Most recent processing jobs and output metadata |
 | `GET /aggregates/{job_id}?limit=1000&offset=0` | GeoJSON polygons for a successful aggregate job |

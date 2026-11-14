@@ -176,9 +176,36 @@ def main():
     grid_parser.add_argument("--start", type=utc_timestamp, required=True)
     grid_parser.add_argument("--end", type=utc_timestamp, required=True)
     grid_parser.add_argument("--grid-size", type=float, default=0.25)
+    study_parser = commands.add_parser("harmonize", help="Evaluate statistical sensor-calibration candidates")
+    study_parser.add_argument("--manifest", required=True)
+    study_parser.add_argument("--regions", required=True)
+    study_parser.add_argument("--protocol", required=True)
+    study_parser.add_argument("--output", required=True)
+    study_parser.add_argument("--exposure", help="Optional curated common-cell-day observability CSV")
+    prepare_parser = commands.add_parser("prepare-jordan", help="Download official overlapping Jordan history")
+    prepare_parser.add_argument("--output", default="data/harmonization/jordan")
+    prepare_parser.add_argument("--start-year", type=int, default=2013)
+    prepare_parser.add_argument("--end-year", type=int, default=2025)
+    levant_parser = commands.add_parser("prepare-levant", help="Prepare a separate Jordan/Syria/Lebanon transfer benchmark")
+    levant_parser.add_argument("--output", default="data/harmonization/levant")
+    levant_parser.add_argument("--start-year", type=int, default=2013)
+    levant_parser.add_argument("--end-year", type=int, default=2025)
+    register_parser = commands.add_parser("register-calibration", help="Register a verified study bundle in PostGIS")
+    register_parser.add_argument("bundle")
     args = parser.parse_args()
     try:
-        if args.command == "ingest":
+        if args.command == "harmonize":
+            from firescope_pipeline.calibration.runner import run_study
+            output = run_study(args.manifest, args.regions, args.protocol, args.output,
+                               exposure_path=args.exposure)
+        elif args.command in {"prepare-jordan", "prepare-levant"}:
+            from firescope_pipeline.calibration.prepare import prepare_jordan
+            output = prepare_jordan(args.output, args.start_year, args.end_year,
+                                    include_levant=args.command == "prepare-levant")
+        elif args.command == "register-calibration":
+            from firescope_pipeline.calibration.io import register_bundle
+            output = register_bundle(session_factory(), args.bundle)
+        elif args.command == "ingest":
             output = ingest(args)
         elif args.command == "validate":
             with Path(args.file).open("rb") as stream:

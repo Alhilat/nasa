@@ -1,0 +1,50 @@
+{
+  "algorithm_version": "sensor-calibration-v1",
+  "bounded_occupancy": false,
+  "context": {
+    "code_sha256": "4b3c4d34b0a0af009369e13cd9d9e971c01af6a337fab787921d9105fcc1480c",
+    "daynight": "D",
+    "grid_size_m": 5000,
+    "native_product_versions": {
+      "MODIS_AQUA": [
+        "6.03",
+        "6.2",
+        "61.03"
+      ],
+      "MODIS_TERRA": [
+        "6.03",
+        "6.2",
+        "61.03"
+      ],
+      "VIIRS_SNPP": [
+        "2"
+      ]
+    },
+    "reference": "MODIS_AQUA",
+    "region_geometry_sha256": "27ea8c63a867a6a809bff155d20cef98915f3a4668718c0d44eecd19ea99f784",
+    "source": "VIIRS_SNPP"
+  },
+  "method": "baseline",
+  "metric": "reported_cell_days_per_1000km2_month",
+  "model_version": "190c87e784781963fd563cf53a6809497350546f26b88fc6ce2503add3d104b1",
+  "parameters": {},
+  "source_range": [
+    0.027153100773698174,
+    1.586977643457366
+  ],
+  "training_hash": "88b4821283c601d25102be0b30e5af1be572445c17d4bd7282868966a65a405c",
+  "training_pairs": 48,
+  "training_regions": [
+    "JOR_northwest",
+    "JOR_southwest"
+  ],
+  "training_years": [
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+  ]
+}
