@@ -16,6 +16,7 @@ from app import repository
 from app.catalog import SCIENCE_NOTES, SENSOR_CODES
 from app.core.config import get_settings
 from app.db import get_session
+from app.history_routes import router as history_router
 from app.models import (
     CalibrationModel, DataQualityReport, HarmonizedAggregate, Observation, ObservationRecord, ProcessingJob,
     RawRecord, Sensor, SourceFile,
@@ -24,9 +25,11 @@ from app.schemas import ObservationQuery
 
 settings = get_settings()
 app = FastAPI(title="FireScope API", version="0.1.0", docs_url="/docs")
+app.include_router(history_router)
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origins,
     allow_methods=["GET", "POST"], allow_headers=["Content-Type"],
+    expose_headers=["X-Analysis-ID"],
 )
 SessionDep = Annotated[Session, Depends(get_session)]
 API = "/api/v1"
@@ -62,7 +65,8 @@ def configuration():
         "crs": "EPSG:4326", "time_zone": "UTC", "sensor_codes": SENSOR_CODES,
         "max_query_results": min(settings.max_query_results, 5000),
         "features": {"polygon_query": True, "grid_aggregation": True, "statistical_calibration": True,
-                     "anomalies": False, "forecasting": False, "machine_learning": False},
+                     "historical_intelligence": True, "anomalies": True,
+                     "forecasting": False, "machine_learning": False},
         "science_notes": SCIENCE_NOTES,
     }
 

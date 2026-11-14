@@ -31,6 +31,23 @@ from firescope_pipeline.service import import_source
 pytestmark = pytest.mark.integration
 
 
+def test_historical_selection_and_export_use_real_postgis(db_client, imported):
+    payload = {"start_year": 2024, "end_year": 2024,
+               "bbox": [-1, -1, 2, 2], "sensors": ["MODIS_TERRA"]}
+    response = db_client.post("/api/v1/analytics/history", json=payload)
+    assert response.status_code == 200
+    result = response.json()
+    assert result["monthly"][0]["count"] == 2
+    assert result["monthly"][0]["completeness"] == "unknown"
+    assert result["monthly"][1]["count"] is None
+    assert result["yearly"][0]["count"] is None
+    assert len(result["sources"]) == 1
+    assert result["sources"][0]["sha256"] == imported[0]["sha256"]
+    export = db_client.post("/api/v1/analytics/history/export.csv", json=payload)
+    assert export.status_code == 200
+    assert export.headers["X-Analysis-ID"] == result["analysis_id"]
+
+
 @pytest.fixture(scope="module")
 def factory():
     url = os.getenv("TEST_DATABASE_URL")

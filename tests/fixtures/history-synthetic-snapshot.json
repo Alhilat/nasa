@@ -1,0 +1,220 @@
+{
+  "query": {
+    "start_year": 2013,
+    "end_year": 2016,
+    "bbox": [
+      34,
+      29,
+      40,
+      34
+    ],
+    "sensors": [
+      "MODIS_TERRA"
+    ],
+    "min_baseline_years": 3,
+    "complete_months": [
+      {
+        "sensor_code": "MODIS_TERRA",
+        "month": "2013-01",
+        "reference": "synthetic test coverage only"
+      },
+      {
+        "sensor_code": "MODIS_TERRA",
+        "month": "2014-01",
+        "reference": "synthetic test coverage only"
+      },
+      {
+        "sensor_code": "MODIS_TERRA",
+        "month": "2015-01",
+        "reference": "synthetic test coverage only"
+      },
+      {
+        "sensor_code": "MODIS_TERRA",
+        "month": "2016-01",
+        "reference": "synthetic test coverage only"
+      }
+    ]
+  },
+  "records": [
+    {
+      "id": 1,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2013-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-1"
+    },
+    {
+      "id": 2,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2014-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-2"
+    },
+    {
+      "id": 3,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2014-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-3"
+    },
+    {
+      "id": 4,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2015-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-4"
+    },
+    {
+      "id": 5,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2015-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-5"
+    },
+    {
+      "id": 6,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2015-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-6"
+    },
+    {
+      "id": 7,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-7"
+    },
+    {
+      "id": 8,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-8"
+    },
+    {
+      "id": 9,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-9"
+    },
+    {
+      "id": 10,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-10"
+    },
+    {
+      "id": 11,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-11"
+    },
+    {
+      "id": 12,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-12"
+    },
+    {
+      "id": 13,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-13"
+    },
+    {
+      "id": 14,
+      "sensor_code": "MODIS_TERRA",
+      "acquired_at": "2016-01-01T00:00:00+00:00",
+      "latitude": 31.0,
+      "longitude": 35.0,
+      "confidence_class": "high",
+      "source_ids": [
+        "synthetic-source-only"
+      ],
+      "record_hash": "synthetic-only-14"
+    }
+  ],
+  "sources": [
+    {
+      "id": "synthetic-source-only",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source_url": "https://example.org/synthetic-software-fixture",
+      "original_filename": "synthetic-only.csv",
+      "sensor_code": "MODIS_TERRA",
+      "product_version": "synthetic",
+      "processing_level": "test-only",
+      "retrieved_at": "2016-02-01T00:00:00+00:00"
+    }
+  ]
+}

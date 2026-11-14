@@ -53,3 +53,9 @@ Observation pages are ordered by acquisition time and observation ID, with defau
 Invalid spatial/time/filter requests return 422. Missing records or unsuccessful aggregate job IDs return 404. Operational errors are sanitized and do not echo connection strings or SQL credentials.
 
 Observation queries now read canonical normalized records introduced by migration `0002_ingestion`. Exact repeated payloads are counted once; original raw copies remain linked. Summary source counts include all raw source files linked to matching normalized observations. Existing aggregate job outputs remain unchanged.
+## Historical intelligence
+
+`POST /api/v1/analytics/history` returns calendars, seasonal medians, matched-month
+comparisons, descriptive anomalies, grid concentration and source metadata.
+`POST /api/v1/analytics/history/export.csv` accepts the same body.
+See [the full metric and completeness contract](historical-intelligence.md).
