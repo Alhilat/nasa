@@ -1,6 +1,6 @@
 import type { Job, ObservationDetail, Observations, Query, Source, Summary } from './types';
 
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
 
 export async function request<T>(path: string, signal?: AbortSignal, body?: unknown): Promise<T> {
   let response: Response;
@@ -17,7 +17,10 @@ export async function request<T>(path: string, signal?: AbortSignal, body?: unkn
   }
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(typeof error.detail === 'string' ? error.detail : `Request failed (${response.status}). Check your filters and database setup.`);
+    const detail = Array.isArray(error.detail) ? error.detail.map((item: { loc?: string[]; msg?: string }) => `${item.loc?.filter(v => v !== 'body').join('.') ?? 'Selection'}: ${item.msg ?? 'Invalid value'}`).join('; ') : error.detail;
+    if (response.status === 404 && detail === 'Not Found' && path.startsWith('/analytics/'))
+      throw new Error('This analytical endpoint is unavailable. Restart FastAPI from the updated FireScope project.');
+    throw new Error(typeof detail === 'string' ? detail : `Request failed (${response.status}). Check your filters and database setup.`);
   }
   return response.json() as Promise<T>;
 }

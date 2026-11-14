@@ -48,6 +48,20 @@ def test_historical_selection_and_export_use_real_postgis(db_client, imported):
     assert export.headers["X-Analysis-ID"] == result["analysis_id"]
 
 
+def test_dashboard_csv_uses_real_archive_selection(db_client, imported):
+    import csv
+    import io
+
+    response = db_client.post("/api/v1/observations/export.csv", json={
+        "bbox": [-1, -1, 2, 2], "start": "2024-01-01T00:00:00Z",
+        "end": "2024-01-02T00:00:00Z", "sensors": ["MODIS_TERRA"],
+    })
+    assert response.status_code == 200
+    rows = list(csv.DictReader(io.StringIO(response.text)))
+    assert len(rows) == 2
+    assert all(r["sha256"] == imported[0]["sha256"] for r in rows)
+
+
 @pytest.fixture(scope="module")
 def factory():
     url = os.getenv("TEST_DATABASE_URL")
@@ -200,6 +214,13 @@ def test_aggregate_lineage_and_unknown_frp(factory, imported, db_client, monkeyp
     features = response.json()["features"]
     assert sum(f["properties"]["detection_count"] for f in features) == 4
     assert any(f["properties"]["frp_sum_mw"] is None for f in features)
+    comparison = db_client.post(f'/api/v1/analytics/comparison/{result["job_id"]}', json={
+        "start": "2024-01-01T00:00:00Z", "end": "2024-01-03T00:00:00Z",
+        "bbox": [-1, -1, 2, 2], "sensors": ["MODIS_TERRA"],
+    })
+    assert comparison.status_code == 200
+    assert comparison.json()["raw_count"] == comparison.json()["grid_count"] == 2
+    assert comparison.json()["archive_counts_match"] is True
 
 
 def import_test_content(factory, content, **kwargs):

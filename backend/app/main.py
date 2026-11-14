@@ -16,6 +16,7 @@ from app import repository
 from app.catalog import SCIENCE_NOTES, SENSOR_CODES
 from app.core.config import get_settings
 from app.db import get_session
+from app.dashboard_routes import router as dashboard_router
 from app.history_routes import router as history_router
 from app.models import (
     CalibrationModel, DataQualityReport, HarmonizedAggregate, Observation, ObservationRecord, ProcessingJob,
@@ -26,6 +27,7 @@ from app.schemas import ObservationQuery
 settings = get_settings()
 app = FastAPI(title="FireScope API", version="0.1.0", docs_url="/docs")
 app.include_router(history_router)
+app.include_router(dashboard_router)
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origins,
     allow_methods=["GET", "POST"], allow_headers=["Content-Type"],

@@ -4,7 +4,7 @@ RUN npm install --global pnpm@11.25.0
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY frontend ./
-ARG VITE_API_BASE_URL=http://localhost:8000/api/v1
+ARG VITE_API_BASE_URL=/api/v1
 ARG VITE_MAP_STYLE_URL=https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_MAP_STYLE_URL=$VITE_MAP_STYLE_URL
 RUN pnpm build

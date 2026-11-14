@@ -1,5 +1,9 @@
 # FireScope
 
+The [scientific dashboard](docs/dashboard.md) is the application's home route: a dark,
+responsive map workspace with region drawing, a burning-activity calendar, historical
+trends, descriptive anomalies, saved-grid comparisons and provenance-aware exports.
+
 Historical intelligence is available at `/history`: monthly/yearly calendars, seasonal
 profiles, matched-month comparisons, descriptive percentile anomalies, spatial
 concentration, trend charts and reproducible exports. See

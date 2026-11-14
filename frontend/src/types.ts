@@ -34,6 +34,7 @@ export type Job = {
   id: string; kind: string; status: string; algorithm_version: string;
   started_at: string; finished_at: string | null; error_message: string | null;
   output_metadata: Record<string, unknown>;
+  parameters: Record<string, unknown>;
 };
 export type ObservationDetail = {
   id: number; raw_properties: Record<string, string>; uncertainty: Record<string, unknown>;

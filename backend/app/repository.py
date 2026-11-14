@@ -7,24 +7,29 @@ from app.models import Observation, ObservationRecord, RawRecord, SourceFile
 from app.schemas import ObservationQuery
 
 
-def observation_filters(query: ObservationQuery):
+def spatial_filters(query: ObservationQuery, location):
     conditions = []
     if query.bbox:
         west, south, east, north = query.bbox
         if west < east:
             envelope = func.ST_MakeEnvelope(west, south, east, north, 4326)
-            conditions.append(func.ST_Covers(envelope, Observation.location))
+            conditions.append(func.ST_Covers(envelope, location))
         else:
             # Wrapped longitude range: two envelopes on either side of the antimeridian.
             conditions.append(or_(
                 func.ST_Covers(func.ST_MakeEnvelope(west, south, 180, north, 4326),
-                               Observation.location),
+                               location),
                 func.ST_Covers(func.ST_MakeEnvelope(-180, south, east, north, 4326),
-                               Observation.location),
+                               location),
             ))
     if query.polygon:
         polygon = func.ST_SetSRID(func.ST_GeomFromGeoJSON(json.dumps(query.polygon)), 4326)
-        conditions.append(func.ST_Covers(polygon, Observation.location))
+        conditions.append(func.ST_Covers(polygon, location))
+    return conditions
+
+
+def observation_filters(query: ObservationQuery):
+    conditions = spatial_filters(query, Observation.location)
     if query.start:
         conditions.append(Observation.acquired_at >= query.start)
     if query.end:

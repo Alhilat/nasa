@@ -12,10 +12,14 @@ export type HistoryMonth = {
   sensor_code: string; month: string; count: number | null; completeness: string;
   historical_median: number | null; lower_threshold: number | null; upper_threshold: number | null;
   baseline_size: number; anomaly_status: string; robust_z: number | null; year_over_year: Comparison;
+  coverage_reference?: string | null; source_ids?: string[]; baseline_years?: number[];
 };
 export type HistoryResult = {
   analysis_id: string; algorithm_version: string; query: HistoryQuery;
-  metric_explanations: Record<string, string>; sources: { id: string; sha256: string; source_url: string }[];
+  metric_explanations: Record<string, string>; sources: {
+    id: string; sha256: string; source_url: string; original_filename?: string;
+    product_version?: string; processing_level?: string; sensor_code?: string; retrieved_at?: string;
+  }[];
   monthly: HistoryMonth[];
   yearly: { sensor_code: string; year: number; count: number | null; observed_count: number | null;
     complete_months: number[]; year_over_year: Comparison & { matched_months: number[] } }[];
