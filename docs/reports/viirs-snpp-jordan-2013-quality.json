@@ -1,0 +1,44 @@
+{
+  "report_version": "firms-quality-v1",
+  "parser_version": "firms-csv-v2",
+  "source_sha256": "32b8f7c41f4e344dc74dd514f21faa6dad0b35b135f28295f676f74aebc72920",
+  "source_rows": 566,
+  "valid_rows": 566,
+  "invalid_rows": 0,
+  "excluded_rows": 0,
+  "selected_rows": 566,
+  "within_file_exact_duplicates": 0,
+  "within_file_same_sensor_time_position_repeats": 0,
+  "selected_missing_frp": 0,
+  "by_sensor": {
+    "VIIRS_SNPP": 566
+  },
+  "issue_counts": {},
+  "issue_samples": [],
+  "issue_samples_truncated": false,
+  "filters": {
+    "bbox": [
+      34.8,
+      29.0,
+      39.4,
+      33.5
+    ],
+    "polygon": null,
+    "start": null,
+    "end": null
+  },
+  "coverage_known": false,
+  "quantitative_uncertainty": null,
+  "status": "validated",
+  "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2013/viirs-snpp_2013_Jordan.csv",
+  "retrieved_at": "2026-11-14T08:08:22.874587+00:00",
+  "source_kind": "official NASA FIRMS yearly country CSV",
+  "validation_only": true,
+  "database_imported": false,
+  "observed_product_versions": {
+    "2": 566
+  },
+  "first_selected_acquisition": "2013-01-01T23:08:00+00:00",
+  "last_selected_acquisition": "2013-12-29T23:25:00+00:00",
+  "expected_product_version": "native"
+}

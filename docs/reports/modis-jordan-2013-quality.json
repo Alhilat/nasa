@@ -1,0 +1,121 @@
+{
+  "report_version": "firms-quality-v1",
+  "parser_version": "firms-csv-v2",
+  "source_sha256": "c093fe5be6e68ed41e90e8ba3fc1d51c25375929b60e079866ca8ed42d50fbfd",
+  "source_rows": 19,
+  "valid_rows": 0,
+  "invalid_rows": 19,
+  "excluded_rows": 0,
+  "selected_rows": 0,
+  "within_file_exact_duplicates": 0,
+  "within_file_same_sensor_time_position_repeats": 0,
+  "selected_missing_frp": 0,
+  "by_sensor": {},
+  "issue_counts": {
+    "version does not match --product-version; split mixed products": 19
+  },
+  "issue_samples": [
+    {
+      "source_row": 1,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 2,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 3,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 4,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 5,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 6,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 7,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 8,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 9,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 10,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 11,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 12,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 13,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 14,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 15,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 16,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 17,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 18,
+      "message": "version does not match --product-version; split mixed products"
+    },
+    {
+      "source_row": 19,
+      "message": "version does not match --product-version; split mixed products"
+    }
+  ],
+  "issue_samples_truncated": false,
+  "filters": {
+    "bbox": [
+      34.8,
+      29.0,
+      39.4,
+      33.5
+    ],
+    "polygon": null,
+    "start": null,
+    "end": null
+  },
+  "coverage_known": false,
+  "quantitative_uncertainty": null,
+  "status": "validation_failed",
+  "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2013/modis_2013_Jordan.csv",
+  "retrieved_at": "2026-11-14T08:08:21.592537+00:00",
+  "source_kind": "official NASA FIRMS yearly country CSV",
+  "validation_only": true,
+  "database_imported": false,
+  "observed_product_versions": {
+    "6.2": 19
+  },
+  "first_selected_acquisition": null,
+  "last_selected_acquisition": null,
+  "expected_product_version": "6.1"
+}
