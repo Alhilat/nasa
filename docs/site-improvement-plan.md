@@ -3,6 +3,13 @@
 Planning baseline: 2026-11-15. Scope: the Render website, FastAPI, Supabase archive,
 ingestion, scientific comparisons, exports, and AI interpretation.
 
+Implementation update: the first foundations batch is deployed and verified.
+See [the production evidence and remaining scope](site-foundations-verification.md).
+This completes the artifact guard, combined-site CI/smoke checks, application-table
+access hardening, and initial archive/UI reconnaissance. The full UX audit,
+operational recovery drills, remaining security work and scientific research are
+still tracked below.
+
 This is an implementation roadmap, not a completed UX audit or a scientific
 validation certificate. No application or production configuration changes are
 authorized by this document alone.
