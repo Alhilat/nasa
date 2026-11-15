@@ -7,6 +7,8 @@ Extension-owned PostGIS tables and functions are deliberately out of scope.
 
 from alembic import op
 
+from app.migration_locks import acquire_release_locks
+
 revision = "0004_backend_access"
 down_revision = "0003_calibration"
 branch_labels = None
@@ -31,6 +33,11 @@ TABLES = (
 
 
 def upgrade():
+    if op.get_context().as_sql:
+        names = ", ".join(f'"{table}"' for table in TABLES)
+        op.execute(f"LOCK TABLE {names} IN ACCESS EXCLUSIVE MODE NOWAIT")
+    else:
+        acquire_release_locks(op.get_bind(), TABLES)
     for table in TABLES:
         op.execute(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY')
         op.execute(f'REVOKE ALL ON TABLE "{table}" FROM PUBLIC')

@@ -49,6 +49,10 @@ the Supabase `anon`/`authenticated` roles when they exist. There are intentional
 no browser policies: the React app accesses FastAPI, not the Supabase Data API.
 Existing owner connections continue working. No broad BYPASSRLS grant is created.
 The migration pins the two application trigger functions to their owning schema.
+It acquires all application table locks before changing permissions, using NOWAIT
+inside a savepoint. A busy archive retries up to 30 times, releasing partial locks
+between attempts. Exhaustion aborts the transaction and keeps the old release;
+it never terminates readers or applies a partial access change.
 
 The database owner currently supplies backend and pipeline access. A dedicated
 read-only API identity and separately scoped ingestion role remain follow-up work;

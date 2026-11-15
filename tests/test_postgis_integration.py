@@ -35,6 +35,44 @@ from sqlalchemy.orm import sessionmaker
 pytestmark = pytest.mark.integration
 
 
+def test_release_lock_retries_without_blocking_readers(audit_factory):
+    import threading
+    import time
+
+    from app.migration_locks import acquire_release_locks
+
+    engine = audit_factory.kw["bind"]
+    ready = threading.Event()
+    release = threading.Event()
+
+    def reader():
+        with engine.begin() as connection:
+            connection.execute(text("LOCK TABLE raw_records IN ACCESS SHARE MODE"))
+            ready.set()
+            release.wait(5)
+
+    worker = threading.Thread(target=reader)
+    worker.start()
+    assert ready.wait(5)
+    try:
+        with engine.begin() as connection:
+            started = time.monotonic()
+            with pytest.raises(RuntimeError, match="Archive is busy"):
+                acquire_release_locks(connection, ("source_files", "raw_records"),
+                                      attempts=2, delay=0.01)
+            assert time.monotonic() - started < 3
+            # A failed all-table attempt must not retain the earlier exclusive
+            # lock on source_files and prevent another live reader from running.
+            with engine.begin() as other:
+                other.execute(text("SET LOCAL lock_timeout='1s'"))
+                other.execute(text("SELECT count(*) FROM source_files"))
+    finally:
+        release.set()
+        worker.join(timeout=5)
+    with engine.begin() as connection:
+        acquire_release_locks(connection, ("source_files", "raw_records"), attempts=1)
+
+
 def test_backend_access_blocks_browser_roles_even_if_grants_reappear(audit_factory):
     """Use a disposable non-login role inside a rolled-back test transaction."""
     with audit_factory() as session:
