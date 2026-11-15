@@ -24,7 +24,7 @@ export function mapStyle(customStyle = import.meta.env.VITE_MAP_STYLE_URL): stri
       },
     },
     layers: [
-      { id: 'background', type: 'background', paint: { 'background-color': theme.navy } },
+      { id: 'background', type: 'background', paint: { 'background-color': theme.surface } },
       { id: 'esri-imagery', type: 'raster', source: 'esri-imagery' },
       { id: 'esri-reference', type: 'raster', source: 'esri-reference' },
     ],

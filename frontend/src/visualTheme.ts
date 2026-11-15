@@ -1,13 +1,15 @@
 /** Rendering tokens for canvas, SVG charts and MapLibre paint properties. */
 export const visualTheme = {
-  navy: '#101D35',
+  surface: '#F4F2EB',
+  text: '#252B35',
   blue: '#1769AA',
   orange: '#F47A32',
-  viirs: '#F7AF7B',
-  reference: '#8CC4EE',
+  viirs: '#1769AA',
+  reference: '#1769AA',
   white: '#FFFFFF',
-  muted: '#BCC7D6',
-  rule: '#40516A',
+  muted: '#252B35',
+  rule: '#8B929C',
+  alert: '#D94141',
   fontUI: 'Inter, sans-serif',
   fontData: 'IBM Plex Mono, monospace',
 } as const;

@@ -2,65 +2,40 @@
 
 ## Scientific Editorial × Earth Observation
 
-The existing PIRX name and supplied project logo anchor the identity. The application combines warm editorial surfaces with navy analytical workspaces. Space Grotesk headlines, fine rules and compact monospace annotations establish the hierarchy. Existing Lucide line icons provide a consistent interface vocabulary.
+The existing responsive workspace uses one continuous warm ivory canvas. Hierarchy comes from typography, alignment and whitespace. Navigation, analytical panels, charts, map containers, image captions and conversation panels share that surface. Controls retain the boundaries needed to understand and operate them.
 
-## Color system
+## Approved palette
 
-| Token | Color | Application |
+| Color | Value | Role |
 | --- | --- | --- |
-| Deep Space Navy | `#101D35` | Maps, analytical panels, charts, documentary image captions |
-| NASA-inspired Blue | `#1769AA` | Navigation, primary actions, links, filters, scientific references |
-| Fire Orange | `#F47A32` | Observed detections, activity series, calendar intensity |
-| Alert Red | `#D94141` | Reserved for independently established critical fire alerts or high-severity indicators |
-| Warm Ivory | `#F4F2EB` | Page canvas, navigation, editorial secondary surfaces |
-| Pure White | `#FFFFFF` | Information panels, analytical foreground text |
-| Graphite | `#252B35` | Editorial text and headings |
-| Muted Gray | `#8B929C` | Neutral status marks, unknown-data marks on navy |
+| Warm Ivory | `#F4F2EB` | Page, navigation, panels, map containers and chart backgrounds |
+| White | `#FFFFFF` | Input fields, tooltip surfaces and selected controls |
+| Graphite | `#252B35` | Headings, body copy, data labels and percentile reference lines |
+| NASA Blue | `#1769AA` | Links, actions, focus, VIIRS series and geographic selections |
+| Fire Orange | `#F47A32` | MODIS series, observed activity and calendar intensity |
+| Alert Red | `#D94141` | Existing error indicators; it does not imply a new scientific alert |
+| Muted Gray | `#8B929C` | Neutral marks and restrained scientific grid lines |
 
-Supporting values derive from these roles. Editorial supporting text uses `#525D6B`, navy supporting text uses `#BCC7D6`, and scientific references on navy use `#8CC4EE`. Borders use `#CDD1D5` on light surfaces and `#40516A` on dark surfaces. These text combinations exceed WCAG AA's 4.5 to 1 normal-text contrast requirement. Orange calendar fills carry navy text. Keyboard focus uses the surface's blue link color.
+Supporting neutral shades and calendar ramps are mixtures of this palette. Small text uses graphite or a graphite-derived neutral, with gray reserved for marks rather than low-contrast body copy. Light styling is intentional even when the operating system prefers dark mode.
 
-The reserved alert color requires a scientifically supported severity state. Archive outages and ordinary statistical anomalies use informational styling with explicit text. Monthly calendar intensity continues to follow the existing calculation.
+## Typography and composition
 
-## Typography
-
-| Family | Role | Scale |
-| --- | --- | --- |
-| Space Grotesk | Page headlines, section headings, prominent observations | 36–54 px page headlines, 18–28 px section headings |
-| Inter | Navigation, controls, explanations, body copy | 12–14 px UI, 14 px body copy |
-| IBM Plex Mono | Coordinates, timestamps, statistical values, chart axes, technical annotations | 10–13 px annotations, 26–38 px statistics |
-
-The fonts are self-hosted in `frontend/public/fonts`. Their SIL Open Font License files accompany each family. Font sources are the official Google Fonts repository's `ofl/spacegrotesk`, `ofl/inter` and `ofl/ibmplexmono` directories.
-
-## Composition and interaction
-
-- Use the existing responsive workspace grid and route hierarchy.
-- Place large left-aligned headlines above a thin divider, with supporting copy beneath them.
-- Use ivory for orientation and white for filters, provenance and explanations. Navy distinguishes map and analytical workspaces.
-- Use 2–3 px corner radii, one-pixel borders and generous 20–32 px panel insets.
-- Use blue for selection and actions. Pair color states with labels, outlines, icons or shapes.
-- Preserve visible focus rings, the skip link, accessible chart tables and reduced-motion support.
-- Keep mobile forms stacked and wide scientific tables horizontally scrollable inside their panels.
+- Space Grotesk: headings and prominent editorial statements.
+- Inter: body copy and interface controls.
+- IBM Plex Mono: scientific values, dates, coordinates, axes and technical metadata.
+- Existing self-hosted fonts, page routes, responsive grids and content remain in place.
+- Decorative eyebrow slogans and framing rules are removed. Scientific labels, sensor names, units, provenance and caveats remain visible.
+- Panels have no decorative outlines or alternating backgrounds. Form fields, focus rings, table headers and selected interactive calendar cells retain essential boundaries.
+- Wide scientific tables remain independently scrollable and keyboard accessible.
 
 ## Maps and charts
 
-Map backgrounds use navy. Authentic Esri imagery retains its original colors and attribution. Region selections use a fine, dashed blue reference line. MODIS markers use fire orange circles. VIIRS uses a lighter orange with a square legend swatch. Existing sensor labels and chart line patterns retain their meaning.
+The ArcGIS World Imagery and World Boundaries and Places sources, tile routes, imagery, attribution, layer identities, coordinates and observation values are unchanged. Only the map's empty background, surrounding controls, container and rendering colors use the updated palette. External imagery and the original documentary photograph retain their natural colors.
 
-Charts use navy backgrounds, light monospace axes and restrained dashed grid lines. Observations use orange, the historical median uses light blue, and the upper percentile uses white. Legends name each series, and missing values continue to break lines. Rendering tokens live in `frontend/src/visualTheme.ts`, while CSS surface tokens live in `frontend/src/identity.css`.
+MODIS is orange and VIIRS is blue, with existing sensor names and legend shapes retained. Geographic selections retain their dashed outline. Charts use ivory backgrounds, graphite labels, orange observations, blue historical medians and graphite percentile lines. Scientific grid lines are quiet gray. Missing values continue to break chart lines; no measurements, calculations or thresholds change.
 
-## Documentary imagery
-
-The Methods page uses NASA's uncropped 1280 × 853 rendition of the Aqua MODIS image of Quebec acquired on June 3, 2023. Its caption identifies the instrument, place, acquisition date and documentary role. The visible credit acknowledges Lauren Dauphin and NASA Earth Observatory, using MODIS data from NASA EOSDIS LANCE and GIBS/Worldview. The caption links to the original article. [NASA Earth Observatory source](https://science.nasa.gov/earth/earth-observatory/fires-burn-across-quebec-151430/)
-
-The local file is `frontend/public/images/quebec-aqua-modis-20230603.jpg`. The original download is available from NASA's asset service. [Original NASA image](https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/151000/151430/quebecfires_amo_2023154.jpg)
-
-Use documentary imagery at its natural aspect ratio with a caption and source. Project branding uses the existing PIRX asset. NASA references credit the data and imagery providers.
+CSS layout and responsive behavior live in `frontend/src/styles.css`; the consolidated visual tokens and appearance live in `frontend/src/identity.css`. Canvas, SVG chart and MapLibre rendering tokens live in `frontend/src/visualTheme.ts`.
 
 ## Verification
 
-- The production TypeScript and Vite build succeeds.
-- All 64 frontend tests and 233 runnable Python tests pass. Fifteen PostGIS integration tests require a database and were skipped.
-- Restored controls, source content, map tools and export actions are documented in the component restoration report.
-- Desktop and mobile review covers all five routes and the existing map. The local backend is offline, so real-data charts, API exports and Gemini responses require live verification after service startup.
-- PNG generation and its download handler pass automated tests. File-saving completion in the preview browser remains unconfirmed.
-
-[Component restoration report](reports/component-restoration.md)
+The implementation's route screenshots, checks and verification results are saved in `reports/visual-cleanup/`. The application has no configured frontend lint script; the build performs TypeScript checking before Vite compilation. Existing frontend tests verify the preserved scientific and interaction behavior. Browser inspection covers every explicit route and the missing-route state at desktop and mobile sizes, plus map, chart, menu and expanded-filter states.

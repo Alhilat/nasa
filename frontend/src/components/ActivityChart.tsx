@@ -19,12 +19,12 @@ export default function ActivityChart({ summary }: { summary: Summary | null }) 
     const sensors = [...new Set(summary.daily.map(d => d.sensor_code))];
     chart.setOption({
       animation: false,
-      backgroundColor: theme.navy,
+      backgroundColor: theme.surface,
       textStyle: { fontFamily: theme.fontUI },
-      tooltip: { trigger: 'axis', renderMode: 'richText', backgroundColor: theme.navy, borderColor: theme.rule, textStyle: { color: theme.white, fontFamily: theme.fontData } },
+      tooltip: { trigger: 'axis', renderMode: 'richText', backgroundColor: theme.white, borderWidth: 0, textStyle: { color: theme.text, fontFamily: theme.fontData } },
       grid: { top: 18, right: 18, bottom: 30, left: 45 },
       xAxis: { type: 'category', data: days, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 } },
-      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule } } },
+      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule, opacity: 0.3 } } },
       series: sensors.map((sensor, index) => ({
         name: sensor, type: 'line', connectNulls: false, symbolSize: 5,
         lineStyle: { width: 2, type: index % 2 ? 'dashed' : 'solid' },

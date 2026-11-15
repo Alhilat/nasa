@@ -17,17 +17,19 @@ export default function ScientificChart({ labels, series, title, metadata, kind 
   useEffect(() => {
     if (!target.current || !hasData) return;
     const chart = echarts.init(target.current, undefined, { renderer: 'svg' }); instance.current = chart;
-    chart.setOption({ animation: false, backgroundColor: theme.navy, color: series.map(s => s.color),
+    const palette: string[] = [theme.orange, theme.blue, theme.text, theme.alert, theme.rule];
+    const colors = series.map((s, i) => palette.includes(s.color.toUpperCase()) ? s.color : palette[i % palette.length]);
+    chart.setOption({ animation: false, backgroundColor: theme.surface, color: colors,
       textStyle: { fontFamily: theme.fontUI },
       aria: { enabled: true },
-      tooltip: { trigger: 'axis', renderMode: 'richText', backgroundColor: theme.navy, borderColor: theme.rule, textStyle: { color: theme.white, fontFamily: theme.fontData } },
+      tooltip: { trigger: 'axis', renderMode: 'richText', backgroundColor: theme.white, borderWidth: 0, textStyle: { color: theme.text, fontFamily: theme.fontData } },
       legend: { bottom: 0, type: 'scroll', textStyle: { color: theme.muted, fontSize: 12 } },
       grid: { top: 25, right: 18, bottom: 65, left: 55 },
-      xAxis: { type: 'category', data: labels, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: theme.rule } }, axisTick: { show: false } },
-      yAxis: { type: 'value', min: 0, minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule, type: 'dashed' } } },
-      series: series.map(s => ({ name: s.name, type: kind, data: s.values, connectNulls: false,
+      xAxis: { type: 'category', data: labels, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: theme.rule, opacity: 0.3 } }, axisTick: { show: false } },
+      yAxis: { type: 'value', min: 0, minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule, opacity: 0.3, type: 'dashed' } } },
+      series: series.map((s, i) => ({ name: s.name, type: kind, data: s.values, connectNulls: false,
         symbol: 'circle', symbolSize: 4, showSymbol: labels.length < 30, barMaxWidth: 35,
-        lineStyle: { width: 2, type: s.dashed ? 'dashed' : 'solid' }, itemStyle: { color: s.color },
+        lineStyle: { width: 2, type: s.dashed ? 'dashed' : 'solid' }, itemStyle: { color: colors[i] },
       })),
     });
     const resize = new ResizeObserver(() => chart.resize()); resize.observe(target.current);
@@ -48,7 +50,7 @@ export default function ScientificChart({ labels, series, title, metadata, kind 
   }
   return <div className="scientific-chart-wrap">
     {hasData ? <><button className="chart-export icon-button" aria-label={`Export ${title} as SVG`} title="Export SVG" onClick={exportSvg}><Download size={15} /></button><div ref={target} className="scientific-chart" role="img" aria-label={title} />
-      <details className="chart-data"><summary>View accessible data table</summary><div className="table-scroll"><table><caption className="sr-only">{title}</caption><thead><tr><th>Period / sensor</th>{series.map(s => <th key={s.name}>{s.name}</th>)}</tr></thead><tbody>{labels.map((label, i) => <tr key={label}><th scope="row">{label}</th>{series.map(s => <td key={s.name}>{s.values[i] ?? 'Unknown'}</td>)}</tr>)}</tbody></table></div></details></>
+      <details className="chart-data"><summary>View accessible data table</summary><div className="table-scroll" role="region" aria-label="Accessible chart data" tabIndex={0}><table><caption className="sr-only">{title}</caption><thead><tr><th>Period / sensor</th>{series.map(s => <th key={s.name}>{s.name}</th>)}</tr></thead><tbody>{labels.map((label, i) => <tr key={label}><th scope="row">{label}</th>{series.map(s => <td key={s.name}>{s.values[i] ?? 'Unknown'}</td>)}</tr>)}</tbody></table></div></details></>
       : <div className="chart-empty"><span>No comparable chart values</span><small>Missing observations remain unknown; no values are estimated.</small></div>}
   </div>;
 }

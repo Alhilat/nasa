@@ -146,7 +146,7 @@ export default function RegionMap({ data, region, loading, scopeLabel = '', onRe
         if (line) lines.push(line);
       }
       canvas.height = original.height + lines.length * 18 + 18;
-      context.fillStyle = theme.navy; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(original, 0, 0);
+      context.fillStyle = theme.surface; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(original, 0, 0);
       context.fillStyle = theme.muted; context.font = '12px IBM Plex Mono, monospace';
       lines.forEach((line, index) => context.fillText(line, 12, original.height + 20 + index * 18));
       const link = document.createElement('a'); link.download = 'firescope-map.png'; link.href = canvas.toDataURL('image/png'); link.click();

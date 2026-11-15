@@ -41,3 +41,28 @@ it('opens the restored Explorer directly and closes navigation after choosing a 
   expect(await screen.findByRole('heading', { name: 'History route content' })).toBeTruthy();
   expect(menu.getAttribute('aria-expanded')).toBe('false');
 });
+
+it('announces route changes with the page title and moves keyboard focus to main', async () => {
+  render(<MemoryRouter><App /></MemoryRouter>);
+  const link = screen.getByRole('link', { name: 'Historical analysis' });
+  link.focus();
+  fireEvent.click(link);
+  await screen.findByRole('heading', { name: 'History route content' });
+  expect(document.title).toBe('PIRX · Historical analysis');
+  expect(document.activeElement).toBe(screen.getByRole('main'));
+});
+
+it('isolates mobile navigation and restores the trigger after Escape dismissal', async () => {
+  render(<MemoryRouter><App /></MemoryRouter>);
+  await screen.findByRole('heading', { name: 'Dashboard route content' });
+  const menu = screen.getByRole('button', { name: 'Toggle navigation' });
+  fireEvent.click(menu);
+  const dialog = screen.getByRole('dialog', { name: 'Workspace navigation' });
+  expect(document.querySelector('.main-shell')?.hasAttribute('inert')).toBe(true);
+  expect(document.body.style.overflow).toBe('hidden');
+  fireEvent(dialog, new Event('cancel', { bubbles: true, cancelable: true }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.querySelector('.main-shell')?.hasAttribute('inert')).toBe(false);
+  expect(document.body.style.overflow).not.toBe('hidden');
+  expect(document.activeElement).toBe(menu);
+});

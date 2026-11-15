@@ -5,7 +5,7 @@ it('uses the two ArcGIS layers with labels above imagery and ArcGIS row/column t
   const style = mapStyle('');
   if (typeof style === 'string') throw new Error('Expected the built-in ArcGIS style');
   expect(style.layers.map(layer => layer.id)).toEqual(['background', 'esri-imagery', 'esri-reference']);
-  expect(style.layers[0]).toEqual({ id: 'background', type: 'background', paint: { 'background-color': '#101D35' } });
+  expect(style.layers[0]).toEqual({ id: 'background', type: 'background', paint: { 'background-color': '#F4F2EB' } });
   const imagery = style.sources['esri-imagery'];
   const reference = style.sources['esri-reference'];
   if (imagery.type !== 'raster' || reference.type !== 'raster') throw new Error('Expected raster tiles');
