@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Database, FileCheck2, RefreshCw } from 'lucide-react';
-import { api } from '../api';
-import type { Job, Source } from '../types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Check, Database, FileCheck2, Grid2X2, Layers2, Play, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import * as echarts from 'echarts/core';
+import { MarkLineComponent } from 'echarts/components';
+import { api, request } from '../api';
+import ScientificChart from '../components/ScientificChart';
+import { visualTheme as theme } from '../visualTheme';
+import type { Job, Observations, Source } from '../types';
 
-export default function Sources() {
+echarts.use([MarkLineComponent]);
+
+function ProvenanceArchive() {
   const [sources, setSources] = useState<Source[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [busy, setBusy] = useState(true);
@@ -31,7 +37,7 @@ export default function Sources() {
     return () => controller.abort();
   }, [refresh, offset]);
 
-  return <><header className="page-header"><div><h1>Data & provenance<span>.</span></h1><p>Original sources, reproducible processing, and a visible audit trail.</p></div><button className="button secondary" onClick={() => setRefresh(n => n + 1)} disabled={busy}><RefreshCw size={15} /> Refresh</button></header>
+  return <><div className="engine-provenance-heading"><p>Original sources, reproducible processing, and a visible audit trail.</p><button className="button secondary" aria-label="Refresh source archive" onClick={() => setRefresh(n => n + 1)} disabled={busy}><RefreshCw size={15} /> Refresh archive</button></div>
     {error && <div role="alert" className="connection-notice">{error}</div>}
     <section className="panel"><div className="panel-heading"><div><h2>Source archive</h2><p>Original files with retrieval dates and SHA-256 checksums.</p></div><FileCheck2 size={21} className="muted" /></div>
       <div className={copyResult ? 'copy-feedback' : 'sr-only'} role="status" aria-live="polite">{copyResult && <><p>{copyResult.copied ? `Checksum copied for ${copyResult.filename}.` : 'Clipboard access is unavailable. Select and copy the full checksum below.'}</p>{!copyResult.copied && <code>{copyResult.hash}</code>}</>}</div>
