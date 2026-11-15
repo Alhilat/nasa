@@ -5,6 +5,7 @@ COPY requirements.lock ./
 RUN pip install -r requirements.lock
 COPY backend ./backend
 COPY data-pipeline ./data-pipeline
+COPY docs/reports/harmonization ./docs/reports/harmonization
 COPY tests ./tests
 COPY pyproject.toml ./
 RUN pip install --no-deps -e ./backend -e ./data-pipeline \

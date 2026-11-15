@@ -16,6 +16,7 @@ import { api, request } from '../api';
 import ScientificChart from '../components/ScientificChart';
 import { visualTheme as theme } from '../visualTheme';
 import { useResource } from '../useResource';
+import { downloadArtifact } from '../history';
 import type { Job, Source } from '../types';
 
 echarts.use([MarkLineComponent]);
@@ -475,6 +476,7 @@ function SensorIllustration() {
 }
 
 export default function Sources() {
+  const [studyArea, setStudyArea] = useState('jordan');
   const [year, setYear] = useState(2024),
     [month, setMonth] = useState(7);
   const [family, setFamily] = useState('both'),
@@ -498,9 +500,9 @@ export default function Sources() {
       sensor_family: family,
       modis_confidence_min: confidence,
       viirs_confidence: viirsConfidence,
-      bbox: [34, 29, 40, 34],
+      bbox: studyArea === 'levant' ? [34, 29, 43, 38] : [34, 29, 40, 34],
     }),
-    [year, month, family, confidence, viirsConfidence],
+    [year, month, family, confidence, viirsConfidence, studyArea],
   );
   const resource = useResource(
     JSON.stringify(query),
@@ -631,6 +633,13 @@ export default function Sources() {
         </div>
         <div className="engine-controls">
           <label>
+            Study area
+            <select value={studyArea} onChange={(e) => setStudyArea(e.target.value)}>
+              <option value="jordan">Jordan study envelope</option>
+              <option value="levant">Levant study envelope</option>
+            </select>
+          </label>
+          <label>
             Sensor family
             <select value={family} onChange={(e) => setFamily(e.target.value)}>
               <option value="both">MODIS + VIIRS</option>
@@ -677,8 +686,11 @@ export default function Sources() {
           </label>
         </div>
         <p className="engine-caption">
-          Jordan study area · 34°–40° E, 29°–34° N · UTC · includes nearby territory. All comparisons use this
-          same bounding box. Observation coverage remains unknown.
+          {studyArea === 'levant'
+            ? 'Levant study area · 34°–43° E, 29°–38° N'
+            : 'Jordan study area · 34°–40° E, 29°–34° N'}{' '}
+          · UTC · includes nearby territory. All comparisons use this same bounding box. Observation coverage
+          remains unknown.
         </p>
         {resource.loading && (
           <div role="status" className="engine-request-state">
@@ -1188,6 +1200,7 @@ export default function Sources() {
           </p>
         )}
       </section>
+      <HarmonizationValidation />
       <section aria-labelledby="engine-why-title">
         <div className="engine-section-heading">
           <h2 id="engine-why-title">Why harmonization matters</h2>
@@ -1278,6 +1291,33 @@ export default function Sources() {
 }
 
 const engineStyles = `
+.harmonization-engine .engine-validation-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 24px;
+  max-width: 760px;
+  margin-bottom: 24px;
+}
+.harmonization-engine .engine-validation-subheading {
+  margin-top: 36px;
+}
+.harmonization-engine .engine-validation-limitations {
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.harmonization-engine .engine-validation-export {
+  margin-top: 28px;
+}
+.harmonization-engine .engine-validation caption {
+  text-align: left;
+  padding-bottom: 18px;
+  font-size: 12px;
+}
+.harmonization-engine .engine-validation .engine-facts dd {
+  font-size: clamp(20px, 2.4vw, 28px);
+  overflow-wrap: anywhere;
+}
 .harmonization-engine {
   min-width: 0;
 }
@@ -1349,7 +1389,7 @@ const engineStyles = `
 }
 .harmonization-engine .engine-controls {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 .harmonization-engine label {
@@ -1579,3 +1619,450 @@ const engineStyles = `
   }
 }
 `;
+
+type AgreementMetrics = { n: number; mae: number | null; rmse: number | null; bias: number | null };
+type ValidationRegion = {
+  id: string;
+  label: string;
+  labels: string[];
+  source: (number | null)[];
+  reference: (number | null)[];
+  candidate: (number | null)[];
+  baseline: AgreementMetrics;
+  calibrated: AgreementMetrics;
+};
+type ValidationEvidence = {
+  version: string;
+  analysis_id: string;
+  calculation_code_sha256: string;
+  dependency_versions: Record<string, string>;
+  study_id: string;
+  study: string;
+  method: string;
+  model_version: string;
+  split: string;
+  start: string;
+  end_exclusive: string;
+  source_sensor: string;
+  reference_sensor: string;
+  daynight: string;
+  grid_size_m: number;
+  units: string;
+  paired_bins: number;
+  unpaired_bins: number;
+  protocol: {
+    train_years: number[];
+    validation_years: number[];
+    test_years: number[];
+    heldout_regions: string[];
+  };
+  metrics: {
+    baseline: AgreementMetrics;
+    candidate: AgreementMetrics;
+    candidate_intervals_95: { available: boolean; blocks?: number; mae?: number[] };
+  };
+  regions: ValidationRegion[];
+  quarterly: { quarter: number; baseline: AgreementMetrics; candidate: AgreementMetrics }[];
+  trend: { available: boolean; mean_slope_error: number | null; mean_baseline_slope_error: number | null };
+  seasonal_profile: {
+    available: boolean;
+    region_years?: number;
+    years?: number;
+    profile_mae?: number;
+    baseline_profile_mae?: number;
+  };
+  limitations_or_rejection_reasons: string[];
+  limitations: string[];
+  source_files: unknown[];
+  artifacts: { file: string; sha256: string; manifest_sha256: string; verification: string }[];
+};
+
+function agreementValue(value: number | null | undefined) {
+  return value == null ? 'Unknown' : value.toLocaleString(undefined, { maximumSignificantDigits: 6 });
+}
+
+function HarmonizationValidation() {
+  const [study, setStudy] = useState('jordan');
+  const [split, setSplit] = useState('test_years');
+  const [regionKey, setRegionKey] = useState('');
+  const [revision, setRevision] = useState(0);
+  const chartGroup = `validation-${useId()}`;
+  const charts = useRef<HTMLDivElement>(null);
+  const path = `/analytics/harmonization/validation?study=${study}&split=${split}`;
+  const resource = useResource(path, (signal) => request<ValidationEvidence>(path, signal), revision);
+  const data = resource.data;
+  const region = data?.regions.find((item) => item.id === regionKey) ?? data?.regions[0];
+  const labels = useMemo(() => region?.labels ?? [], [region]);
+  const beforeSeries = useMemo(
+    () => [
+      { name: 'VIIRS S-NPP shared-grid activity', color: theme.orange, values: region?.source ?? [] },
+      { name: 'MODIS Aqua reference', color: theme.blue, dashed: true, values: region?.reference ?? [] },
+    ],
+    [region],
+  );
+  const afterSeries = useMemo(
+    () => [
+      { name: 'Experimental candidate', color: theme.orange, values: region?.candidate ?? [] },
+      { name: 'MODIS Aqua reference', color: theme.blue, dashed: true, values: region?.reference ?? [] },
+    ],
+    [region],
+  );
+  useEffect(() => {
+    const instances = Array.from(charts.current?.querySelectorAll<HTMLElement>('.scientific-chart') ?? [])
+      .map((node) => echarts.getInstanceByDom(node))
+      .filter((instance) => instance !== undefined);
+    if (!instances.length) return;
+    instances.forEach((instance) => {
+      instance.group = chartGroup;
+    });
+    echarts.connect(chartGroup);
+    return () => {
+      echarts.disconnect(chartGroup);
+    };
+  }, [data, region, chartGroup]);
+  const interval = data?.metrics.candidate_intervals_95;
+  const chartMetadata = data
+    ? {
+        analysis_id: data.analysis_id,
+        study_id: data.study_id,
+        model_version: data.model_version,
+        region: region?.id,
+        units: data.units,
+        split,
+        protocol: data.protocol,
+        source_files: data.source_files,
+        artifacts: data.artifacts,
+        limitations: data.limitations,
+        calculation_code_sha256: data.calculation_code_sha256,
+        dependency_versions: data.dependency_versions,
+        start: data.start,
+        end_exclusive: data.end_exclusive,
+        daynight: data.daynight,
+        grid_size_m: data.grid_size_m,
+        metrics: data.metrics,
+      }
+    : undefined;
+  return (
+    <section aria-labelledby="validation-heading" className="engine-validation">
+      <div className="engine-section-heading">
+        <div>
+          <p className="engine-kicker">Held-out years & geographic regions</p>
+          <h2 id="validation-heading">Scientific validation & regional evidence</h2>
+          <p>Evaluate the published candidates against fixed MODIS Aqua reference observations.</p>
+        </div>
+        <button
+          className="button secondary"
+          onClick={() => setRevision((n) => n + 1)}
+          disabled={resource.loading}
+        >
+          <RefreshCw size={15} /> Refresh evidence
+        </button>
+      </div>
+      <div className="engine-validation-controls">
+        <label>
+          Validation study
+          <select
+            value={study}
+            onChange={(e) => {
+              setStudy(e.target.value);
+              setRegionKey('');
+            }}
+          >
+            <option value="jordan">Jordan · four study blocks</option>
+            <option value="levant">Levant · Jordan, Syria & Lebanon</option>
+          </select>
+        </label>
+        <label>
+          Held-out evaluation
+          <select
+            value={split}
+            onChange={(e) => {
+              setSplit(e.target.value);
+              setRegionKey('');
+            }}
+          >
+            <option value="test_years">Held-out years</option>
+            <option value="test_regions">Held-out regions</option>
+            <option value="test_years_and_regions">Held-out years & regions</option>
+          </select>
+        </label>
+      </div>
+      {resource.loading && <p role="status">Verifying study artifacts and replaying held-out comparisons…</p>}
+      {resource.error && (
+        <div role="alert" className="connection-notice">
+          <p>Validation evidence unavailable. {resource.error}</p>
+          <p>Retry to load the verified benchmark. Live archive controls remain available above.</p>
+        </div>
+      )}
+      {data && (
+        <>
+          <p className="engine-caption">
+            Published 2013–2025 benchmark · daytime {data.source_sensor} → {data.reference_sensor} ·{' '}
+            {data.grid_size_m / 1000} km equal-area cells · monthly summaries.
+          </p>
+          <p className="engine-caption">
+            Training {data.protocol.train_years.join(', ')} · selection{' '}
+            {data.protocol.validation_years.join(', ')} · temporal test {data.protocol.test_years.join(', ')}{' '}
+            · geographic holdout {data.protocol.heldout_regions.join(', ')}. Candidate selection uses the
+            validation years. The displayed tests retain their original held-out roles.
+          </p>
+          <dl className="engine-facts">
+            <div>
+              <dt>Paired evaluation bins</dt>
+              <dd>{agreementValue(data.paired_bins)}</dd>
+              <p>Region-month pairs with finite activity for both sensors in this held-out scope.</p>
+            </div>
+            <div>
+              <dt>Unpaired region-months</dt>
+              <dd>{agreementValue(data.unpaired_bins)}</dd>
+              <p>Calendar bins with at least one missing sensor value. Their activity remains unknown.</p>
+            </div>
+            <div>
+              <dt>Candidate status</dt>
+              <dd>Experimental</dd>
+              <p>{data.method.replaceAll('_', ' ')} · further validation required for operational use.</p>
+            </div>
+          </dl>
+          <div className="table-scroll" role="region" aria-label="Held-out agreement metrics" tabIndex={0}>
+            <table>
+              <caption>Agreement to MODIS Aqua · all eligible region-month pairs · {data.units}</caption>
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Before calibration</th>
+                  <th>Experimental candidate</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">MAE</th>
+                  <td>{agreementValue(data.metrics.baseline.mae)}</td>
+                  <td>{agreementValue(data.metrics.candidate.mae)}</td>
+                  <td>Mean absolute difference from the sensor reference.</td>
+                </tr>
+                <tr>
+                  <th scope="row">RMSE</th>
+                  <td>{agreementValue(data.metrics.baseline.rmse)}</td>
+                  <td>{agreementValue(data.metrics.candidate.rmse)}</td>
+                  <td>Root mean squared difference, with more weight on large discrepancies.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Signed bias</th>
+                  <td>{agreementValue(data.metrics.baseline.bias)}</td>
+                  <td>{agreementValue(data.metrics.candidate.bias)}</td>
+                  <td>Mean estimate minus reference. Positive values indicate a higher estimate.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {interval?.available ? (
+            <p className="engine-caption">
+              Candidate MAE 95% interval · {agreementValue(interval.mae?.[0])}–
+              {agreementValue(interval.mae?.[1])}. Fixed-model year-block bootstrap using {interval.blocks}{' '}
+              held-out year blocks. This interval describes sample agreement variability.
+            </p>
+          ) : (
+            <p className="engine-caption">
+              Agreement intervals require at least three held-out year blocks with paired observations.
+            </p>
+          )}
+          {!data.paired_bins && (
+            <p role="status">
+              This held-out scope has no paired observations. Error metrics and candidate comparisons remain
+              unevaluated.
+            </p>
+          )}
+          <div className="engine-section-heading engine-validation-subheading">
+            <div>
+              <h3>Compare equivalent regional histories</h3>
+              <p className="engine-caption">
+                Both charts use the same region, UTC calendar months, daytime stratum and activity units.
+                Candidate values are shown for paired bins used in the selected evaluation.
+              </p>
+            </div>
+            <label>
+              Comparison region
+              <select
+                value={region?.id ?? ''}
+                disabled={!data.regions.length}
+                onChange={(e) => setRegionKey(e.target.value)}
+              >
+                {data.regions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div ref={charts} className="engine-chart-pair">
+            <div>
+              <h3>Before calibration · {region?.label}</h3>
+              <ScientificChart
+                title="Regional activity before calibration"
+                labels={labels}
+                series={beforeSeries}
+                metadata={chartMetadata}
+              />
+            </div>
+            <div>
+              <h3>Experimental candidate · {region?.label}</h3>
+              <ScientificChart
+                title="Regional activity after candidate calibration"
+                labels={labels}
+                series={afterSeries}
+                metadata={chartMetadata}
+              />
+            </div>
+          </div>
+          <p className="engine-caption">
+            The baseline already uses the study’s 5 km shared-grid activity metric. This evidence retains its
+            own versioned scientific method alongside the live 0.01° illustration. Each region-month has equal
+            weight in the overall error metrics. Geographic boundaries are approximate study geometries.
+          </p>
+          <div className="table-scroll" role="region" aria-label="Regional validation support" tabIndex={0}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Evaluation region</th>
+                  <th>Paired bins</th>
+                  <th>Baseline MAE</th>
+                  <th>Candidate MAE</th>
+                  <th>Candidate RMSE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.regions.map((item) => (
+                  <tr key={item.id}>
+                    <th scope="row">{item.label}</th>
+                    <td>{item.calibrated.n}</td>
+                    <td>{agreementValue(item.baseline.mae)}</td>
+                    <td>{agreementValue(item.calibrated.mae)}</td>
+                    <td>{agreementValue(item.calibrated.rmse)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <h3 className="engine-validation-subheading">Seasonal patterns & historical trends</h3>
+          <dl className="engine-facts">
+            <div>
+              <dt>Centered seasonal-profile MAE</dt>
+              <dd>{agreementValue(data.seasonal_profile.profile_mae)}</dd>
+              <p>
+                Candidate quarterly-profile error. Baseline{' '}
+                {agreementValue(data.seasonal_profile.baseline_profile_mae)}. Requires all four quarters
+                within region-years and at least three years.
+              </p>
+            </div>
+            <div>
+              <dt>Seasonal support</dt>
+              <dd>
+                {data.seasonal_profile.available
+                  ? `${data.seasonal_profile.region_years} region-years`
+                  : 'Unknown'}
+              </dd>
+              <p>Retrospective diagnostic support, with at least one paired month in each quarter.</p>
+            </div>
+            <div>
+              <dt>Matched-calendar slope error</dt>
+              <dd>{agreementValue(data.trend.mean_slope_error)}</dd>
+              <p>
+                Candidate absolute slope difference from the reference. Baseline{' '}
+                {agreementValue(data.trend.mean_baseline_slope_error)}. Activity units per year, requiring
+                three years and six common calendar months per region.
+              </p>
+            </div>
+          </dl>
+          {data.quarterly.length > 0 && (
+            <details>
+              <summary>Quarterly agreement and sample support</summary>
+              <div className="table-scroll" role="region" aria-label="Quarterly agreement" tabIndex={0}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Quarter</th>
+                      <th>Paired bins</th>
+                      <th>Baseline MAE</th>
+                      <th>Candidate MAE</th>
+                      <th>Candidate RMSE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.quarterly.map((item) => (
+                      <tr key={item.quarter}>
+                        <th scope="row">Q{item.quarter}</th>
+                        <td>{item.candidate.n}</td>
+                        <td>{agreementValue(item.baseline.mae)}</td>
+                        <td>{agreementValue(item.candidate.mae)}</td>
+                        <td>{agreementValue(item.candidate.rmse)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          )}
+          <h3 className="engine-validation-subheading">Validation requirements & limitations</h3>
+          <p>
+            Physical fire accuracy requires independent reference measurements. Observation coverage remains
+            unknown for these detection-only studies, so changes in the curves require instrument-aware
+            interpretation.
+          </p>
+          <ul className="engine-validation-limitations">
+            {data.limitations.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>
+            Further acceptance work requires independently audited swath, cloud, quality and overpass
+            information, consistent product versions, and additional held-out regional and seasonal support.
+          </p>
+          <details>
+            <summary>Inspect acceptance-check reasons</summary>
+            <ul>
+              {data.limitations_or_rejection_reasons.map((reason) => (
+                <li key={reason}>
+                  <code>{reason}</code>
+                </li>
+              ))}
+            </ul>
+          </details>
+          <div className="engine-validation-export">
+            <button
+              className="button secondary"
+              onClick={() =>
+                downloadArtifact(
+                  JSON.stringify(data, null, 2),
+                  `pirx-validation-${study}-${split}.json`,
+                  'application/json',
+                )
+              }
+            >
+              Export validation evidence <ArrowRight size={15} />
+            </button>
+            <details>
+              <summary>Source provenance, artifact verification & model version</summary>
+              <pre>
+                {JSON.stringify(
+                  {
+                    analysis_id: data.analysis_id,
+                    study_id: data.study_id,
+                    model_version: data.model_version,
+                    calculation_code_sha256: data.calculation_code_sha256,
+                    dependency_versions: data.dependency_versions,
+                    artifacts: data.artifacts,
+                    source_files: data.source_files,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}

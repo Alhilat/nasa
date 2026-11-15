@@ -103,3 +103,66 @@ using new output directories. Supply a real, independently curated `--exposure`
 file for the occupancy method; none is available in the present archive. The
 experimental seasonal gate has been tested with synthetic fixtures only;
 those fixtures are not scientific observations.
+
+## In-application evidence review
+
+The harmonization engine at `/sources` includes a scientific validation section.
+Choose Jordan or the supplementary Levant study, then held-out years, held-out
+regions, or their intersection. MAE, RMSE and signed bias use the same finite
+paired region-month observations for baseline and candidate. The regional
+charts keep each geographic footprint and UTC month aligned. Candidate chart
+values are available for paired evaluation bins, with missing observations
+represented by gaps.
+
+`GET /api/v1/analytics/harmonization/validation?study=levant&split=test_years`
+replays the archived fixed model, checks its version fingerprint and prediction
+parity, recomputes error metrics, year-block intervals, matched-calendar trends,
+and retrospective seasonal profiles using the existing Python analytical
+services. The response includes source URLs, source checksums, model version,
+study identifier, protocol, rejection reasons and an analysis identifier. JSON
+export and the shared chart SVG exports carry this context. The backend image
+includes the curated study bundles so evidence review is available independently
+of the local PostGIS archive.
+
+Curated analytical text exports were originally hashed with Windows CRLF line
+endings. Git stores their LF representation. Verification accepts exact bytes
+or a text-only CRLF reconstruction matching the original manifest. Responses
+report the actual file SHA-256, original manifest SHA-256 and verification mode.
+An unrelated content change fails verification and returns HTTP 503.
+
+### Reproduction from original NASA inputs
+
+The original input manifests contain 26 Jordan and 78 supplementary Levant
+files. A fresh run of the existing workflow on 2026-11-15 produced these study
+identifiers with the current pipeline and dependency environment.
+
+| Study | Fresh study ID | Paired / unpaired region-month bins | Operational calibration supported |
+| --- | --- | --- | --- |
+| Jordan | `dd0c71bd85033e020e5f8a2a44f087f1072ac3564942532118c8519e6e1bc645` | 95 / 529 | false |
+| Levant | `0299e579888982142a61480de8ddb8224b4192b23fbdf92ef21510a8e84f4491` | 326 / 142 | false |
+
+The local outputs are in `reports/harmonization-improvements/jordan` and
+`reports/harmonization-improvements/levant`. To reproduce with the normal
+installed development environment, use a new output directory for each run.
+The existing CLI requires an empty output directory to preserve versioned
+artifacts.
+
+```powershell
+python -m firescope_pipeline.cli harmonize --manifest data/harmonization/jordan/sources.json --regions data/harmonization/jordan/regions.geojson --protocol configs/harmonization/jordan-protocol.json --output reports/jordan-validation-review
+python -m firescope_pipeline.cli harmonize --manifest data/harmonization/levant/sources.json --regions data/harmonization/levant/regions.geojson --protocol configs/harmonization/levant-protocol.json --output reports/levant-validation-review
+```
+
+The live archive now also includes the 52 available Syria/Lebanon CSVs from the
+Levant manifest. Every payload matched its declared SHA-256 before the normal
+transactional importer processed it. The local archive contains 225,259 canonical
+observations and 92 source files. The import audit is available locally in
+`reports/harmonization-improvements/import.json`. Choose the Jordan or Levant
+study envelope in the live engine. Envelopes include neighboring territory.
+Live prototype analysis has a 250,000-observation safety limit and retains
+coverage-unknown status.
+
+The multi-region evaluation spans 2013–2025. Additional pre-VIIRS MODIS archive
+years provide historical context. Cross-sensor evaluation of further periods
+requires paired observations and a separately specified protocol. The failed
+trend, seasonal, geographic and observability checks continue to define the
+limitations of scientific interpretation.
