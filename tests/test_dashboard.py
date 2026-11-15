@@ -1,4 +1,4 @@
-"""Synthetic dashboard transport/selection tests; never application observations."""
+"""Dashboard transport tests and checksum-verified published benchmark replays."""
 
 import csv
 import io
@@ -345,7 +345,7 @@ def test_prototype_endpoint_reads_raw_temperature_and_primary_source_metadata():
         daynight="N",
         source_id=JOB,
         source_row=2,
-        raw_properties={"bright_ti4": "331.5"},
+        brightness_native="331.5",
     )
     source = SimpleNamespace(
         _mapping={"id": JOB, "original_filename": "synthetic-test.csv", "sha256": "a" * 64}
@@ -373,3 +373,109 @@ def test_prototype_refuses_oversized_selection_before_returning_partial_statisti
     with pytest.raises(HTTPException) as error:
         harmonization_engine(HarmonizationSelection(), FakeSession([[None] * 250001]))
     assert error.value.status_code == 413
+
+
+@pytest.mark.parametrize(
+    "study,split,n,mae",
+    [
+        ("jordan", "test_years", 31, 0.04304978667282163),
+        ("jordan", "test_regions", 0, None),
+        ("jordan", "test_years_and_regions", 0, None),
+        ("levant", "test_years", 74, 0.04804001454575213),
+        ("levant", "test_regions", 44, 0.308128884),
+        ("levant", "test_years_and_regions", 31, 0.422810),
+    ],
+)
+def test_published_holdouts_replay_with_scientific_scope_and_missingness(study, split, n, mae):
+    from app.dashboard_routes import validation_evidence
+
+    result = validation_evidence(study, split)
+    assert result["paired_bins"] == n
+    if mae is None:
+        assert result["metrics"]["candidate"]["mae"] is None
+    else:
+        assert result["metrics"]["candidate"]["mae"] == pytest.approx(mae, abs=1e-6)
+    assert result["operational_calibration_supported"] is False
+    assert result["selection_used_test_data"] is False
+    assert result["observation_coverage"] == "unknown"
+    assert result["grid_size_m"] == 5000
+    assert len(result["source_files"]) == (26 if study == "jordan" else 78)
+    assert sum(item["candidate"]["n"] for item in result["quarterly"]) == n
+    for region in result["regions"]:
+        for reference, source, candidate in zip(
+            region["reference"], region["source"], region["candidate"], strict=True
+        ):
+            if reference is None or source is None:
+                assert candidate is None
+    assert result["analysis_id"] == validation_evidence(study, split)["analysis_id"]
+
+
+def test_validation_surfaces_residual_trend_bias_and_sparse_seasonal_support():
+    from app.dashboard_routes import validation_evidence
+
+    temporal = validation_evidence("levant", "test_years")
+    assert (
+        temporal["trend"]["mean_slope_error"] > 1.1 * temporal["trend"]["mean_baseline_slope_error"]
+    )
+    assert temporal["seasonal_profile"]["available"] is True
+    assert temporal["seasonal_profile"]["region_years"] == 5
+    assert "test_years:trend_error_worsened" in temporal["limitations_or_rejection_reasons"]
+    jordan = validation_evidence("jordan", "test_years")
+    assert jordan["seasonal_profile"]["available"] is False
+    assert "test_years:seasonal_profile_not_estimable" in jordan["limitations_or_rejection_reasons"]
+
+
+def test_benchmark_integrity_supports_git_text_normalization_and_rejects_tampering(tmp_path):
+    import hashlib
+
+    from app.dashboard_routes import benchmark_text
+
+    original = b'{"fixture":"synthetic test only"}\r\n'
+    manifest = {"artifacts": {"fixture.json": hashlib.sha256(original).hexdigest()}}
+    path = tmp_path / "fixture.json"
+    path.write_bytes(original)
+    assert benchmark_text(tmp_path, "fixture.json", manifest)[1]["verification"] == "exact_bytes"
+    path.write_bytes(original.replace(b"\r\n", b"\n"))
+    content, metadata = benchmark_text(tmp_path, "fixture.json", manifest)
+    assert metadata["verification"] == "manifest_matches_reconstructed_crlf_text"
+    assert metadata["sha256"] == hashlib.sha256(content.encode()).hexdigest()
+    path.write_bytes(b'{"fixture":"changed"}\n')
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        benchmark_text(tmp_path, "fixture.json", manifest)
+
+
+def test_validation_api_requires_verified_artifacts_and_rejects_arbitrary_study_paths(
+    monkeypatch, tmp_path
+):
+    import app.dashboard_routes as routes
+
+    monkeypatch.setattr(routes, "VALIDATION_ROOT", tmp_path)
+    with TestClient(app) as client:
+        assert (
+            client.get("/api/v1/analytics/harmonization/validation?study=../private").status_code
+            == 422
+        )
+        assert (
+            client.get("/api/v1/analytics/harmonization/validation?split=train").status_code == 422
+        )
+        response = client.get("/api/v1/analytics/harmonization/validation")
+    assert response.status_code == 503
+    assert "Verified validation evidence is unavailable" in response.json()["detail"]
+
+
+def test_validation_api_operates_independently_of_postgis():
+    def unavailable_database():
+        raise AssertionError("This evidence endpoint must use its curated study bundle")
+
+    app.dependency_overrides[get_session] = unavailable_database
+    try:
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/v1/analytics/harmonization/validation?study=levant&split=test_years_and_regions"
+            )
+        assert response.status_code == 200
+        result = response.json()
+        assert result["metrics"]["candidate"]["n"] == 31
+        assert result["regions"][0]["id"] == "LBN"
+    finally:
+        app.dependency_overrides.clear()

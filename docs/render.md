@@ -54,6 +54,11 @@ The database is hosted by Supabase rather than Render.
 
 The API health endpoint is `https://firescope-api.onrender.com/api/v1/health/ready`.
 
+The static site routes `/basemap/imagery/*` and `/basemap/reference/*` to the
+existing Esri tile services before applying the SPA fallback. These routes
+provide the tile forwarding used by the local Vite server and the Docker Nginx
+configuration. Static sites use Render's CDN and omit the service `region` field.
+
 Supabase stores the application data persistently. The API runs the Alembic migrations
 on startup. If you rename either Render service, update `CORS_ORIGINS` and
 `VITE_API_BASE_URL` in `render.yaml` to match the resulting `onrender.com` URLs.

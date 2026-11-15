@@ -3,7 +3,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import Sources from './Sources';
 import { api, request } from '../api';
 import * as echarts from 'echarts/core';
+import { downloadArtifact } from '../history';
 
+vi.mock('../history', () => ({ downloadArtifact: vi.fn() }));
 vi.mock('../api', () => ({ api: { sources: vi.fn(), jobs: vi.fn() }, request: vi.fn() }));
 vi.mock('echarts/core', () => ({
   use: vi.fn(),
@@ -18,9 +20,65 @@ vi.mock('../components/ScientificChart', () => ({
     </div>
   ),
 }));
+// Isolated synthetic UI transport fixtures. Application results come from verified backend artifacts.
+function validationFixture() {
+  const score = { n: 1, mae: 0.04, rmse: 0.06, bias: 0.003 };
+  return {
+    version: 'harmonization-evidence-v1',
+    analysis_id: 'synthetic-validation-id',
+    study_id: 'synthetic-study',
+    study: 'jordan',
+    method: 'regression',
+    model_version: 'synthetic-model',
+    split: 'test_years',
+    source_sensor: 'VIIRS_SNPP',
+    reference_sensor: 'MODIS_AQUA',
+    grid_size_m: 5000,
+    daynight: 'D',
+    units: 'reported flagged-cell days per 1,000 km² per month',
+    paired_bins: 1,
+    unpaired_bins: 1,
+    protocol: {
+      train_years: [2013, 2014, 2015],
+      validation_years: [2020, 2021],
+      test_years: [2022, 2023, 2024, 2025],
+      heldout_regions: ['test-holdout'],
+    },
+    metrics: {
+      baseline: { ...score, mae: 0.3 },
+      candidate: score,
+      candidate_intervals_95: { available: false },
+    },
+    regions: [
+      {
+        id: 'test-region',
+        label: 'Test study region',
+        labels: ['2024-01', '2024-02'],
+        source: [0.3, null],
+        reference: [0.04, null],
+        candidate: [0.05, null],
+        baseline: score,
+        calibrated: score,
+      },
+    ],
+    quarterly: [{ quarter: 1, baseline: score, candidate: score }],
+    trend: { available: false, mean_slope_error: null, mean_baseline_slope_error: null },
+    seasonal_profile: { available: false },
+    limitations_or_rejection_reasons: ['test_years:trend_not_estimable'],
+    limitations: ['Test-only evidence limitation.'],
+    source_files: [],
+    artifacts: [],
+  };
+}
+function mockEngineResponse(value: unknown) {
+  vi.mocked(request).mockImplementation((path) =>
+    Promise.resolve(path.includes('/validation?') ? validationFixture() : value),
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(request).mockResolvedValue({
+  mockEngineResponse({
     summary: { input_detections: 0, accepted_detections: 0, unified_cell_days: 0 },
     annual: [],
     monthly: [],
@@ -127,12 +185,16 @@ it('supports keyboard navigation through all pipeline stages and explains the ap
 });
 
 it('shows request failures and retries without filling scientific charts', async () => {
-  vi.mocked(request).mockRejectedValue(new Error('Archive offline'));
+  vi.mocked(request).mockImplementation((path) =>
+    path.includes('/validation?')
+      ? Promise.resolve(validationFixture())
+      : Promise.reject(new Error('Archive offline')),
+  );
   render(<Sources />);
   expect((await screen.findByRole('alert')).textContent).toContain('Archive offline');
   expect(screen.getByLabelText('Before harmonization').textContent).toContain('"values":[]');
   expect(screen.getByLabelText('After harmonization').textContent).toContain('"values":[]');
-  vi.mocked(request).mockResolvedValue({
+  mockEngineResponse({
     summary: { input_detections: 0 },
     cells: [],
     sources: [],
@@ -165,7 +227,7 @@ it('renders backend evidence and switches raw, unified and radiative measurement
     frp_before_viirs: 8,
     frp_after_total: 12,
   };
-  vi.mocked(request).mockResolvedValue({
+  mockEngineResponse({
     analysis_id: 'synthetic-ui-test',
     algorithm_version: 'prototype-test',
     sources: [],
@@ -248,7 +310,7 @@ it('links chart instances and annotates the sensor transition even when one char
       ? (chart as unknown as echarts.ECharts)
       : undefined,
   );
-  vi.mocked(request).mockResolvedValue({
+  mockEngineResponse({
     summary: { input_detections: 1 },
     cells: [],
     sources: [],
@@ -283,4 +345,67 @@ it('links chart instances and annotates the sensor transition even when one char
   expect(echarts.connect).toHaveBeenCalledWith(chart.group);
   view.unmount();
   expect(echarts.disconnect).toHaveBeenCalledWith(chart.group);
+});
+
+it('loads the Levant regional holdouts and exports the displayed scientific evidence', async () => {
+  mockEngineResponse({ summary: { input_detections: 0 }, annual: [], monthly: [], cells: [], sources: [] });
+  render(<Sources />);
+  await screen.findByRole('table', { name: /Agreement to MODIS Aqua/ });
+  expect(screen.getByLabelText('Regional activity after candidate calibration').textContent).toContain(
+    '"values":[0.05,null]',
+  );
+  fireEvent.change(screen.getByLabelText('Validation study'), { target: { value: 'levant' } });
+  fireEvent.change(screen.getByLabelText('Held-out evaluation'), { target: { value: 'test_regions' } });
+  await waitFor(() =>
+    expect(request).toHaveBeenCalledWith(
+      '/analytics/harmonization/validation?study=levant&split=test_regions',
+      expect.any(AbortSignal),
+    ),
+  );
+  const button = await screen.findByRole('button', { name: /Export validation evidence/ });
+  fireEvent.click(button);
+  expect(downloadArtifact).toHaveBeenCalledWith(
+    expect.stringContaining('synthetic-validation-id'),
+    'pirx-validation-levant-test_regions.json',
+    'application/json',
+  );
+  const payload = JSON.parse(vi.mocked(downloadArtifact).mock.calls[0][0]);
+  expect(payload.metrics.candidate.mae).toBe(0.04);
+  expect(payload.model_version).toBe('synthetic-model');
+});
+
+it('requests the wider live archive extent and retains equivalent-area chart comparisons', async () => {
+  render(<Sources />);
+  fireEvent.change(screen.getByLabelText('Study area'), { target: { value: 'levant' } });
+  await waitFor(() =>
+    expect(request).toHaveBeenCalledWith(
+      '/analytics/harmonization',
+      expect.any(AbortSignal),
+      expect.objectContaining({ bbox: [34, 29, 43, 38] }),
+    ),
+  );
+  expect(screen.getByText(/Levant study area · 34°–43°/)).toBeTruthy();
+});
+
+it('keeps a failed validation bundle separate from live observations and supports retry', async () => {
+  let unavailable = true;
+  vi.mocked(request).mockImplementation((path) => {
+    if (path.includes('/validation?'))
+      return unavailable
+        ? Promise.reject(new Error('Bundle verification failed'))
+        : Promise.resolve(validationFixture());
+    return Promise.resolve({
+      summary: { input_detections: 0 },
+      annual: [],
+      monthly: [],
+      cells: [],
+      sources: [],
+    });
+  });
+  render(<Sources />);
+  expect((await screen.findByRole('alert')).textContent).toContain('Validation evidence unavailable');
+  unavailable = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh evidence' }));
+  await screen.findByRole('table', { name: /Agreement to MODIS Aqua/ });
+  expect(screen.queryByRole('alert')).toBeNull();
 });

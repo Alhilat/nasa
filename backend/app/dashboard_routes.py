@@ -7,13 +7,25 @@ import json
 import math
 from collections import defaultdict
 from datetime import UTC, datetime, time, timedelta
+from importlib.metadata import version
+from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID
 
+import numpy as np
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+from firescope_pipeline.calibration.io import code_hash
+from firescope_pipeline.calibration.models import fingerprint, predict_model
+from firescope_pipeline.calibration.validation import (
+    metric_intervals,
+    metrics,
+    seasonal_metrics,
+    trend_metrics,
+)
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.catalog import SENSOR_CODES
@@ -32,6 +44,7 @@ from app.schemas import ObservationQuery
 
 router = APIRouter(prefix="/api/v1", tags=["dashboard"])
 SessionDep = Annotated[Session, Depends(get_session)]
+VALIDATION_ROOT = Path(__file__).resolve().parents[2] / "docs/reports/harmonization"
 
 
 def validate(query):
@@ -435,9 +448,11 @@ def analyze_harmonization(query: HarmonizationSelection, records: list[dict], so
         "records": records,
         "sources": sources,
     }
-    analysis_id = hashlib.sha256(
-        json.dumps(fingerprint, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
-    ).hexdigest()
+    digest = hashlib.sha256()
+    encoder = json.JSONEncoder(sort_keys=True, separators=(",", ":"), allow_nan=False)
+    for chunk in encoder.iterencode(fingerprint):
+        digest.update(chunk.encode())
+    analysis_id = digest.hexdigest()
     return {
         "analysis_id": analysis_id,
         "algorithm_version": fingerprint["version"],
@@ -500,7 +515,13 @@ def harmonization_engine(query: HarmonizationSelection, session: SessionDep):
             Observation.daynight,
             Observation.source_id,
             Observation.source_row,
-            RawRecord.raw_properties,
+            case(
+                (
+                    Observation.sensor_code.startswith("MODIS"),
+                    RawRecord.raw_properties["brightness"].as_string(),
+                ),
+                else_=RawRecord.raw_properties["bright_ti4"].as_string(),
+            ).label("brightness_native"),
         )
         .join(
             RawRecord,
@@ -533,12 +554,13 @@ def harmonization_engine(query: HarmonizationSelection, session: SessionDep):
                 "frp_mw": prototype_number(row.frp_mw),
                 "confidence_native": row.confidence_native,
                 "daynight": row.daynight,
-                "brightness_k": prototype_number(row.raw_properties.get(brightness_field)),
+                "brightness_k": prototype_number(row.brightness_native),
                 "brightness_field": brightness_field,
                 "source_id": str(row.source_id),
                 "source_row": row.source_row,
             }
         )
+    del rows
     source_ids = {r["source_id"] for r in records}
     sources = (
         session.execute(
@@ -560,3 +582,212 @@ def harmonization_engine(query: HarmonizationSelection, session: SessionDep):
         for row in sources
     ]
     return analyze_harmonization(query, records, sorted(metadata, key=lambda s: s["id"]))
+
+
+def benchmark_text(folder: Path, name: str, manifest: dict):
+    """Verify curated text exports, including Git's LF normalization of Windows exports."""
+    content = (folder / name).read_bytes()
+    expected = manifest["artifacts"][name]
+    digest = hashlib.sha256(content).hexdigest()
+    representation = "exact_bytes"
+    if digest != expected:
+        windows_bytes = content.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        if hashlib.sha256(windows_bytes).hexdigest() != expected:
+            raise ValueError(f"Benchmark checksum mismatch for {name}")
+        representation = "manifest_matches_reconstructed_crlf_text"
+    return content.decode("utf-8"), {
+        "file": name,
+        "sha256": digest,
+        "manifest_sha256": expected,
+        "verification": representation,
+    }
+
+
+def validation_evidence(study: str, split: str):
+    """Replay fixed published candidates on their original blocked holdouts."""
+    folder = VALIDATION_ROOT / study
+    manifest = json.loads((folder / "summary-manifest.json").read_text(encoding="utf-8"))
+    verified = []
+
+    def read(name):
+        content, metadata = benchmark_text(folder, name, manifest)
+        verified.append(metadata)
+        return content
+
+    evaluation = json.loads(read("evaluation.json"))
+    config = json.loads(read("protocol.json"))
+    sources = json.loads(read("source-files.json"))["files"]
+    geometry = json.loads(read("regions.geojson"))
+    pairs = pd.read_csv(
+        io.StringIO(read("all-pairs-including-missing.csv")), float_precision="round_trip"
+    )
+    predictions = pd.read_csv(
+        io.StringIO(read("candidate-predictions.csv")), float_precision="round_trip"
+    )
+    method = evaluation["validation_selected_method"]
+    model = json.loads(read(f"model-{method}.json"))
+    core = {key: value for key, value in model.items() if key != "model_version"}
+    if fingerprint(core) != model["model_version"] or model != evaluation["models"][method]:
+        raise ValueError("Candidate content differs from its versioned model")
+    candidate = predictions[predictions.method == method].copy().reset_index(drop=True)
+    replay, _ = predict_model(model, candidate)
+    if not np.allclose(replay, candidate.prediction.to_numpy(), rtol=1e-10, atol=1e-12):
+        raise ValueError("Candidate prediction replay differs from the archived result")
+    protocol = evaluation["protocol"]
+    heldout = pairs.region_id.isin(protocol["heldout_regions"])
+    if split == "test_regions":
+        scope = heldout & pairs.year.isin(protocol["train_years"])
+    elif split == "test_years_and_regions":
+        scope = heldout & pairs.year.isin(protocol["test_years"])
+    else:
+        scope = ~heldout & pairs.year.isin(protocol["test_years"])
+    calendar = pairs[scope].copy()
+    sample = candidate[candidate.split == split].copy().reset_index(drop=True)
+    before = metrics(sample.activity_reference, sample.activity_source)
+    after = metrics(sample.activity_reference, sample.prediction)
+    published = evaluation["evaluations"][method]["splits"][split]
+    if before["n"] != after["n"] or after["n"] != published["n"]:
+        raise ValueError("Holdout pair counts differ from the archived evaluation")
+    if int(calendar.paired.sum()) != after["n"]:
+        raise ValueError("Holdout calendar differs from the archived prediction scope")
+    for name in ("mae", "rmse", "bias"):
+        if after[name] is not None and not math.isclose(
+            after[name], published[name], rel_tol=1e-10, abs_tol=1e-12
+        ):
+            raise ValueError("Recomputed agreement differs from the archived evaluation")
+    trend = trend_metrics(sample, sample.prediction, protocol["min_trend_months"])
+    season = seasonal_metrics(sample, sample.prediction)
+    region_names = {
+        str(feature["properties"]["region_id"]): feature["properties"].get(
+            "name", str(feature["properties"]["region_id"])
+        )
+        for feature in geometry["features"]
+    }
+    regions = []
+    for region_id, months in calendar.groupby("region_id", sort=True):
+        months = months.sort_values("month")
+        regional = sample[sample.region_id == region_id]
+        estimates = regional.set_index("month").prediction.to_dict()
+        regions.append(
+            {
+                "id": str(region_id),
+                "label": region_names.get(str(region_id), str(region_id)),
+                "labels": months.month.tolist(),
+                "reference": [
+                    float(value) if pd.notna(value) else None for value in months.activity_reference
+                ],
+                "source": [
+                    float(value) if pd.notna(value) else None for value in months.activity_source
+                ],
+                "candidate": [
+                    float(estimates[month]) if month in estimates else None
+                    for month in months.month
+                ],
+                "baseline": metrics(regional.activity_reference, regional.activity_source),
+                "calibrated": metrics(regional.activity_reference, regional.prediction),
+            }
+        )
+    quarters = []
+    for quarter, subset in sample.groupby((sample.month_number - 1) // 3 + 1):
+        quarters.append(
+            {
+                "quarter": int(quarter),
+                "baseline": metrics(subset.activity_reference, subset.activity_source),
+                "candidate": metrics(subset.activity_reference, subset.prediction),
+            }
+        )
+    reasons = list(evaluation["limitations_or_rejection_reasons"])
+    if not season["available"]:
+        reasons.append(f"{split}:seasonal_profile_not_estimable")
+    elif season["profile_mae"] > season["baseline_profile_mae"] * 1.1 + 1e-12:
+        reasons.append(f"{split}:seasonal_profile_error_worsened")
+    calculation_code_sha256 = hashlib.sha256(
+        (code_hash() + hashlib.sha256(Path(__file__).read_bytes()).hexdigest()).encode()
+    ).hexdigest()
+    dependency_versions = {name: version(name) for name in ("numpy", "pandas")}
+    identity = {
+        "version": "harmonization-evidence-v1",
+        "study": study,
+        "split": split,
+        "artifacts": verified,
+        "calculation_code_sha256": calculation_code_sha256,
+        "dependency_versions": dependency_versions,
+    }
+    return {
+        "version": identity["version"],
+        "analysis_id": fingerprint(identity),
+        "calculation_code_sha256": calculation_code_sha256,
+        "dependency_versions": dependency_versions,
+        "study": study,
+        "study_id": manifest["study_id"],
+        "method": method,
+        "model_version": model["model_version"],
+        "split": split,
+        "protocol": protocol,
+        "start": config["start"],
+        "end_exclusive": config["end"],
+        "source_sensor": evaluation["source_sensor"],
+        "reference_sensor": evaluation["reference_sensor"],
+        "daynight": evaluation["daynight"],
+        "grid_size_m": config["grid_size_m"],
+        "metric": evaluation["metric"],
+        "units": "reported flagged-cell days per 1,000 km² per month",
+        "metrics": {
+            "baseline": before,
+            "candidate": after,
+            "candidate_intervals_95": metric_intervals(
+                sample, sample.prediction, protocol["bootstrap_repeats"], protocol["seed"]
+            ),
+        },
+        "paired_bins": after["n"],
+        "unpaired_bins": int((~calendar.paired).sum()),
+        "calendar_bins": len(calendar),
+        "regions": regions,
+        "quarterly": quarters,
+        "trend": trend,
+        "seasonal_profile": season,
+        "coverage_mode": "detection_only_conditional",
+        "observation_coverage": "unknown",
+        "operational_calibration_supported": False,
+        "published_operational_calibration_supported": evaluation[
+            "operational_calibration_supported"
+        ],
+        "limitations_or_rejection_reasons": sorted(set(reasons)),
+        "selection_used_test_data": evaluation["selection_used_test_data"],
+        "selection_rule": evaluation["selection_rule"],
+        "source_files": sources,
+        "artifacts": verified,
+        "diagnostic_scope": (
+            "Recomputed fixed-candidate holdouts and retrospective seasonal diagnostics "
+            "from archived study inputs."
+        ),
+        "limitations": [
+            "Agreement is conditional on paired detection-supported region-month bins "
+            "and a MODIS Aqua reference.",
+            "Common geography, calendar periods and the daytime stratum define the "
+            "comparison against MODIS Aqua.",
+            "Clouds, viewing geometry, overpass timing and detection sensitivity "
+            "remain unmeasured confounders.",
+            "Missing archive bins remain unknown. Valid non-detection opportunities "
+            "require independently audited observation coverage.",
+            "Seasonal diagnostics are retrospective. Quarterly support requires at least "
+            "one paired month per quarter and at least three years.",
+            "95% intervals use held-out year-block bootstrap of a fixed model "
+            "and describe sample agreement variability.",
+            "The 2013–2025 benchmark uses versioned 5 km equal-area activity. The live "
+            "0.01-degree prototype and later archive extensions have their own scopes.",
+        ],
+    }
+
+
+@router.get("/analytics/harmonization/validation")
+def harmonization_validation(
+    study: Literal["jordan", "levant"] = "jordan",
+    split: Literal["test_years", "test_regions", "test_years_and_regions"] = "test_years",
+):
+    try:
+        return validation_evidence(study, split)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise HTTPException(
+            503, "Verified validation evidence is unavailable; check the bundled study artifacts"
+        ) from error

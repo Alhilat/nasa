@@ -14,6 +14,7 @@ COPY requirements.lock ./
 RUN pip install -r requirements.lock
 COPY backend ./backend
 COPY data-pipeline ./data-pipeline
+COPY docs/reports/harmonization ./docs/reports/harmonization
 COPY tests ./tests
 COPY pyproject.toml ./
 COPY --from=website /workspace/frontend/dist ./frontend/dist
