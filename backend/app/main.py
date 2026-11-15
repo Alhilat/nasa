@@ -25,12 +25,14 @@ from app.models import (
     RawRecord, Sensor, SourceFile,
 )
 from app.schemas import ObservationQuery
+from app.web import mount_website, router as web_router
 
 settings = get_settings()
 app = FastAPI(title="PIRX API", version="0.1.0", docs_url="/docs")
 app.include_router(history_router)
 app.include_router(dashboard_router)
 app.include_router(intelligence_router)
+app.include_router(web_router)
 app.add_middleware(AIBodyLimit)
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origins,
@@ -268,3 +270,6 @@ def aggregates(job_id: UUID, session: SessionDep, limit: int = Query(1000, ge=1,
     } for a, geometry in rows[:limit]],
         "metadata": {"job_id": job_id, "has_more": len(rows) > limit,
                      "parameters": job.parameters, "provenance": job.output_metadata}}
+
+
+mount_website(app)

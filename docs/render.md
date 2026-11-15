@@ -1,6 +1,39 @@
 # Render deployment
 
-The repository includes a Render Blueprint at [`render.yaml`](../render.yaml).
+## Fix an existing API-only deployment
+
+The backend can now serve the built PIRX frontend at `/`, including direct visits
+to `/explorer`, `/history`, `/sources`, and `/methodology`. API requests use
+`/api/v1` on the same origin; public basemap tiles use the backend's fixed provider
+proxy. No separate frontend or CORS configuration is needed for this setup.
+
+For the existing `https://pirx-nasa.onrender.com` **Python** web service, configure:
+
+| Setting | Value |
+| --- | --- |
+| Branch | `main` |
+| Root Directory | Leave blank (repository root) |
+| Build Command | `bash infrastructure/render-build.sh` |
+| Start Command | `alembic -c backend/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/api/v1/health/live` |
+| `NODE_VERSION` | `22.12.0` |
+
+Keep the existing Supabase `DATABASE_URL`, `MAP_KEY`, and `GEMINI_API_KEY` in
+Render's secret environment variables. Use **Deploy latest commit** after saving
+the build/start settings. A restart alone does not rebuild the frontend.
+
+For a **Docker** web service, keep the repository root as its build context and
+`infrastructure/backend.Dockerfile` as its Dockerfile. It now builds and includes
+the frontend automatically. Redeploy the latest commit.
+
+Verify `/` returns HTML, `/assets/...` returns the compiled JavaScript/CSS,
+`/history` works after a refresh, and `/api/v1/health/ready` reports the database
+connected. If `/` still returns `{"detail":"Not Found"}`, check that the deployed
+commit includes this change and its build log contains `vite build`.
+
+## Optional separate-service Blueprint
+
+The repository also includes a Render Blueprint at [`render.yaml`](../render.yaml).
 It creates:
 
 - `firescope-api`: the FastAPI container, with migrations run during startup.
