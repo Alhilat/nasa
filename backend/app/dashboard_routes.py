@@ -1,9 +1,9 @@
 """Read-only dashboard comparisons of persisted aggregates with equivalent archive bins."""
 
 import csv
+import hashlib
 import io
 import json
-import hashlib
 import math
 from collections import defaultdict
 from datetime import UTC, datetime, time, timedelta
@@ -324,34 +324,69 @@ def prototype_frp(records):
 def analyze_harmonization(query: HarmonizationSelection, records: list[dict], sources: list[dict]):
     """Deterministic prototype statistics over canonical observations, with no writes."""
     records = sorted(records, key=lambda r: r["id"])
+    sources = sorted(sources, key=lambda source: source["id"])
     for record in records:
         if not record["sensor_code"].startswith(("MODIS", "VIIRS")):
             raise ValueError("Prototype input must contain MODIS or VIIRS observations")
     accepted_all = [r for r in records if prototype_accepts(r, query)]
-    scoped = [r for r in records if query.sensor_family == "both" or r["sensor_code"].startswith(query.sensor_family)]
-    accepted = [r for r in accepted_all if query.sensor_family == "both" or r["sensor_code"].startswith(query.sensor_family)]
+    scoped = [
+        r
+        for r in records
+        if query.sensor_family == "both" or r["sensor_code"].startswith(query.sensor_family)
+    ]
+    accepted = [
+        r
+        for r in accepted_all
+        if query.sensor_family == "both" or r["sensor_code"].startswith(query.sensor_family)
+    ]
     selected = [r for r in scoped if r["year"] == query.year and r["month"] == query.month]
-    selected_accepted = [r for r in accepted if r["year"] == query.year and r["month"] == query.month]
+    selected_accepted = [
+        r for r in accepted if r["year"] == query.year and r["month"] == query.month
+    ]
     grouped = prototype_cells(selected_accepted)
     cells = []
     for (day, grid_id, lat, lon), members in sorted(grouped.items()):
         frp = [r["frp_mw"] for r in members if r["frp_mw"] is not None]
         temperatures = [r["brightness_k"] for r in members if r["brightness_k"] is not None]
-        cells.append({
-            "key": f"{day}_{grid_id}", "acq_date": day, "grid_id": grid_id,
-            "grid_lat": lat, "grid_lon": lon, "unified_fire_count": 1,
-            "raw_detections_count": len(members),
-            "total_frp_mw": sum(frp) if frp else None,
-            "mean_frp_mw": sum(frp) / len(frp) if frp else None,
-            "frp_known_count": len(frp),
-            "max_temp_k": max(temperatures) if temperatures else None,
-            "temperature_known_count": len(temperatures),
-            "sensors_involved": sorted({r["sensor_code"] for r in members}),
-            "day_detections": sum(r["daynight"] == "D" for r in members),
-            "night_detections": sum(r["daynight"] == "N" for r in members),
-            "members": [{k: r[k] for k in ("id", "sensor_code", "latitude", "longitude", "confidence_native", "frp_mw", "brightness_k", "brightness_field", "daynight", "source_id", "source_row")} for r in members[:20]],
-            "members_truncated": len(members) > 20,
-        })
+        cells.append(
+            {
+                "key": f"{day}_{grid_id}",
+                "acq_date": day,
+                "grid_id": grid_id,
+                "grid_lat": lat,
+                "grid_lon": lon,
+                "unified_fire_count": 1,
+                "raw_detections_count": len(members),
+                "total_frp_mw": sum(frp) if frp else None,
+                "mean_frp_mw": sum(frp) / len(frp) if frp else None,
+                "frp_known_count": len(frp),
+                "max_temp_k": max(temperatures) if temperatures else None,
+                "temperature_known_count": len(temperatures),
+                "sensors_involved": sorted({r["sensor_code"] for r in members}),
+                "day_detections": sum(r["daynight"] == "D" for r in members),
+                "night_detections": sum(r["daynight"] == "N" for r in members),
+                "members": [
+                    {
+                        k: r[k]
+                        for k in (
+                            "id",
+                            "sensor_code",
+                            "latitude",
+                            "longitude",
+                            "confidence_native",
+                            "frp_mw",
+                            "brightness_k",
+                            "brightness_field",
+                            "daynight",
+                            "source_id",
+                            "source_row",
+                        )
+                    }
+                    for r in members[:20]
+                ],
+                "members_truncated": len(members) > 20,
+            }
+        )
     years = sorted({r["year"] for r in records} | {query.year})
     annual = defaultdict(list)
     filtered_annual = defaultdict(list)
@@ -372,43 +407,81 @@ def analyze_harmonization(query: HarmonizationSelection, records: list[dict], so
         modis = [r for r in raw if r["sensor_code"].startswith("MODIS")]
         viirs = [r for r in raw if r["sensor_code"].startswith("VIIRS")]
         return {
-            "label": str(label), "raw_modis": len(modis) if modis else None,
+            "label": str(label),
+            "raw_modis": len(modis) if modis else None,
             "raw_viirs": len(viirs) if viirs else None,
             "accepted_count": len(retained) if raw else None,
             "unified_cell_days": len(prototype_cells(retained)) if raw else None,
-            "frp_before_modis": prototype_frp(modis), "frp_before_viirs": prototype_frp(viirs),
+            "frp_before_modis": prototype_frp(modis),
+            "frp_before_viirs": prototype_frp(viirs),
             "frp_after_total": prototype_frp(retained),
             "frp_after_known_count": sum(r["frp_mw"] is not None for r in retained),
             "coverage": "unknown",
         }
 
-    overlap_records = [r for r in accepted_all if 2012 <= r["year"] <= 2024 and r["month"] == query.month]
+    overlap_records = [
+        r for r in accepted_all if 2012 <= r["year"] <= 2024 and r["month"] == query.month
+    ]
     modis_overlap = [r for r in overlap_records if r["sensor_code"].startswith("MODIS")]
     viirs_overlap = [r for r in overlap_records if r["sensor_code"].startswith("VIIRS")]
-    modis_keys, viirs_keys = set(prototype_cells(modis_overlap)), set(prototype_cells(viirs_overlap))
+    modis_keys, viirs_keys = (
+        set(prototype_cells(modis_overlap)),
+        set(prototype_cells(viirs_overlap)),
+    )
     union, shared = modis_keys | viirs_keys, modis_keys & viirs_keys
-    fingerprint = {"version": "rounded-001deg-cell-day-prototype-v1", "query": query.model_dump(mode="json"), "records": records, "sources": sources}
-    analysis_id = hashlib.sha256(json.dumps(fingerprint, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+    fingerprint = {
+        "version": "rounded-001deg-cell-day-prototype-v1",
+        "query": query.model_dump(mode="json"),
+        "records": records,
+        "sources": sources,
+    }
+    analysis_id = hashlib.sha256(
+        json.dumps(fingerprint, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    ).hexdigest()
     return {
-        "analysis_id": analysis_id, "algorithm_version": fingerprint["version"],
-        "query": query.model_dump(mode="json"), "available_years": years,
-        "summary": {"input_detections": len(selected), "accepted_detections": len(selected_accepted),
-                    "rejected_detections": len(selected) - len(selected_accepted),
-                    "retention_percent": 100 * len(selected_accepted) / len(selected) if selected else None,
-                    "unified_cell_days": len(grouped), "total_frp_mw": prototype_frp(selected_accepted),
-                    "frp_known_count": sum(r["frp_mw"] is not None for r in selected_accepted)},
-        "annual": [period(year, annual[year], filtered_annual[year]) for year in range(min(years), max(years) + 1)],
-        "monthly": [period(f"{query.year}-{month:02d}", monthly[month], filtered_monthly[month]) for month in range(1, 13)],
-        "overlap": {"start_year": 2012, "end_year": 2024, "calendar_month": query.month,
-                    "scope": "Both sensor families, same area, calendar month and confidence rules.",
-                    "modis_detections": len(modis_overlap), "viirs_detections": len(viirs_overlap),
-                    "modis_cell_days": len(modis_keys), "viirs_cell_days": len(viirs_keys),
-                    "shared_cell_days": len(shared), "modis_only_cell_days": len(modis_keys - viirs_keys),
-                    "viirs_only_cell_days": len(viirs_keys - modis_keys), "union_cell_days": len(union),
-                    "jaccard": len(shared) / len(union) if union else None,
-                    "both_families_present": bool(modis_overlap and viirs_overlap)},
-        "cells": cells[:200], "cells_total": len(cells), "cells_truncated": len(cells) > 200,
-        "sources": sources, "coverage": "unknown", "operational_calibration": False,
+        "analysis_id": analysis_id,
+        "algorithm_version": fingerprint["version"],
+        "query": query.model_dump(mode="json"),
+        "available_years": years,
+        "summary": {
+            "input_detections": len(selected),
+            "accepted_detections": len(selected_accepted),
+            "rejected_detections": len(selected) - len(selected_accepted),
+            "retention_percent": 100 * len(selected_accepted) / len(selected) if selected else None,
+            "unified_cell_days": len(grouped),
+            "total_frp_mw": prototype_frp(selected_accepted),
+            "frp_known_count": sum(r["frp_mw"] is not None for r in selected_accepted),
+        },
+        "annual": [
+            period(year, annual[year], filtered_annual[year])
+            for year in range(min(years), max(years) + 1)
+        ],
+        "monthly": [
+            period(f"{query.year}-{month:02d}", monthly[month], filtered_monthly[month])
+            for month in range(1, 13)
+        ],
+        "overlap": {
+            "start_year": 2012,
+            "end_year": 2024,
+            "calendar_month": query.month,
+            "scope": "Both sensor families, same area, calendar month and confidence rules.",
+            "modis_detections": len(modis_overlap),
+            "viirs_detections": len(viirs_overlap),
+            "modis_cell_days": len(modis_keys),
+            "viirs_cell_days": len(viirs_keys),
+            "shared_cell_days": len(shared),
+            "modis_only_cell_days": len(modis_keys - viirs_keys),
+            "viirs_only_cell_days": len(viirs_keys - modis_keys),
+            "union_cell_days": len(union),
+            "jaccard": len(shared) / len(union) if modis_keys and viirs_keys else None,
+            "both_families_present": bool(modis_overlap and viirs_overlap),
+        },
+        "cells": cells[:200],
+        "cells_total": len(cells),
+        "cells_truncated": len(cells) > 200,
+        "sources": sources,
+        "coverage": "unknown",
+        "operational_calibration": False,
     }
 
 
@@ -416,31 +489,74 @@ def analyze_harmonization(query: HarmonizationSelection, records: list[dict], so
 def harmonization_engine(query: HarmonizationSelection, session: SessionDep):
     selection = ObservationQuery(bbox=query.bbox)
     rows = session.execute(
-        select(Observation.id, Observation.sensor_code, Observation.acquired_at,
-               Observation.latitude, Observation.longitude, Observation.frp_mw,
-               Observation.confidence_native, Observation.daynight,
-               Observation.source_id, Observation.source_row, RawRecord.raw_properties)
-        .join(RawRecord, and_(RawRecord.source_id == Observation.source_id, RawRecord.source_row == Observation.source_row))
+        select(
+            Observation.id,
+            Observation.sensor_code,
+            Observation.acquired_at,
+            Observation.latitude,
+            Observation.longitude,
+            Observation.frp_mw,
+            Observation.confidence_native,
+            Observation.daynight,
+            Observation.source_id,
+            Observation.source_row,
+            RawRecord.raw_properties,
+        )
+        .join(
+            RawRecord,
+            and_(
+                RawRecord.source_id == Observation.source_id,
+                RawRecord.source_row == Observation.source_row,
+            ),
+        )
         .where(*observation_filters(selection))
-        .order_by(Observation.id).limit(250001)
+        .order_by(Observation.id)
+        .limit(250001)
     ).all()
     if len(rows) > 250000:
-        raise HTTPException(413, "Prototype selection exceeds 250,000 observations; narrow the area")
+        raise HTTPException(
+            413, "Prototype selection exceeds 250,000 observations; narrow the area"
+        )
     records = []
     for row in rows:
         acquired = row.acquired_at.astimezone(UTC)
         brightness_field = "brightness" if row.sensor_code.startswith("MODIS") else "bright_ti4"
-        records.append({"id": row.id, "sensor_code": row.sensor_code,
-                        "day": acquired.date().isoformat(), "year": acquired.year, "month": acquired.month,
-                        "latitude": row.latitude, "longitude": row.longitude,
-                        "frp_mw": prototype_number(row.frp_mw), "confidence_native": row.confidence_native,
-                        "daynight": row.daynight,
-                        "brightness_k": prototype_number(row.raw_properties.get(brightness_field)),
-                        "brightness_field": brightness_field,
-                        "source_id": str(row.source_id), "source_row": row.source_row})
+        records.append(
+            {
+                "id": row.id,
+                "sensor_code": row.sensor_code,
+                "day": acquired.date().isoformat(),
+                "year": acquired.year,
+                "month": acquired.month,
+                "latitude": row.latitude,
+                "longitude": row.longitude,
+                "frp_mw": prototype_number(row.frp_mw),
+                "confidence_native": row.confidence_native,
+                "daynight": row.daynight,
+                "brightness_k": prototype_number(row.raw_properties.get(brightness_field)),
+                "brightness_field": brightness_field,
+                "source_id": str(row.source_id),
+                "source_row": row.source_row,
+            }
+        )
     source_ids = {r["source_id"] for r in records}
-    sources = session.execute(select(SourceFile.id, SourceFile.original_filename, SourceFile.sha256,
-                                     SourceFile.source_url, SourceFile.sensor_code, SourceFile.product_version,
-                                     SourceFile.processing_level).where(SourceFile.id.in_(source_ids))).all() if source_ids else []
-    metadata = [{k: str(v) if isinstance(v, UUID) else v for k, v in row._mapping.items()} for row in sources]
+    sources = (
+        session.execute(
+            select(
+                SourceFile.id,
+                SourceFile.original_filename,
+                SourceFile.sha256,
+                SourceFile.source_url,
+                SourceFile.sensor_code,
+                SourceFile.product_version,
+                SourceFile.processing_level,
+            ).where(SourceFile.id.in_(source_ids))
+        ).all()
+        if source_ids
+        else []
+    )
+    metadata = [
+        {k: str(v) if isinstance(v, UUID) else v for k, v in row._mapping.items()}
+        for row in sources
+    ]
     return analyze_harmonization(query, records, sorted(metadata, key=lambda s: s["id"]))
