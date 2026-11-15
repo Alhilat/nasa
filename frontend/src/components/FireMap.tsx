@@ -7,7 +7,7 @@ import { mapStyle } from '../mapStyle';
 import { watchBasemap } from '../basemap';
 import type { ObservationProperties, Observations } from '../types';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { visualTheme as theme } from '../visualTheme';
+import { scientificColors } from '../colorScales';
 
 const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -50,7 +50,7 @@ export default function FireMap({ data, onBounds, onSelect }: Props) {
         id: 'observations', type: 'circle', source: 'observations',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 3, 8, 6],
-          'circle-color': ['match', ['get', 'sensor_code'], 'MODIS_TERRA', theme.orange, 'MODIS_AQUA', theme.orange, theme.viirs],
+          'circle-color': ['match', ['get', 'sensor_code'], 'MODIS_TERRA', scientificColors.sensors.MODIS, 'MODIS_AQUA', scientificColors.sensors.MODIS, scientificColors.sensors.VIIRS],
           'circle-opacity': 0.85, 'circle-stroke-width': 1, 'circle-stroke-color': '#ffffff55',
         },
       });

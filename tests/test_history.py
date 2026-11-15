@@ -123,6 +123,25 @@ def test_incomplete_positive_counts_are_excluded_from_baseline_and_comparisons()
     assert result["seasonal_profiles"][0]["median"] is None
 
 
+def test_native_calendar_median_context_preserves_signed_count_departures():
+    result = analyze(query(), records({"2013-01": 10, "2014-01": 20, "2015-01": 30,
+                                      "2016-01": 50}), [{**s, "processing_level": "standard"}
+                                                       for s in SOURCES])
+    context = month(result, "2016-01")["median_comparison"]
+    assert context["historical_median"] == 20
+    assert context["departure"] == 30
+    assert context["baseline_years"] == [2013, 2014, 2015]
+
+
+def test_manual_completeness_does_not_make_nrt_values_eligible_for_median_colors():
+    result = analyze(query(), records({"2013-01": 10, "2014-01": 20, "2015-01": 30,
+                                      "2016-01": 50}), [{**s, "processing_level": "nrt"}
+                                                       for s in SOURCES])
+    context = month(result, "2016-01")["median_comparison"]
+    assert context["status"] == "unsupported_processing"
+    assert context["departure"] is None
+
+
 def test_yearly_comparisons_use_same_complete_months_not_unequal_annual_totals():
     declarations = [
         {"sensor_code": SENSOR, "month": m, "reference": "test"}
@@ -918,3 +937,107 @@ def test_supported_model_still_requires_compatible_metric_and_exact_validated_sc
         else:
             context[key] = value
     assert _verify_calibration_model(entry(), q, versions) == (False, reason)
+
+
+def test_empty_api_windows_sharing_sha256_retain_individual_requests():
+    base_bbox = [34.8, 29.0, 39.4, 33.5]
+    sha = "d" * 64
+    windows = [
+        ("2026-01-01", "2026-01-06"),
+        ("2026-01-06", "2026-01-11"),
+        ("2026-01-11", "2026-01-16"),
+        ("2026-01-16", "2026-01-21"),
+        ("2026-01-21", "2026-01-26"),
+        ("2026-01-26", "2026-01-31"),
+        ("2026-01-31", "2026-02-01"),
+    ]
+    shared_empty_source = {
+        "id": "empty-modis-shared",
+        "sha256": sha,
+        "original_filename": "MODIS_SP_empty.csv",
+        "source_url": "https://firms.modaps.eosdis.nasa.gov/api/area/",
+        "sensor_code": "MODIS",
+        "product_version": "native",
+        "processing_level": "standard",
+        "row_count": 0,
+        "retrieved_at": "2026-02-01T00:00:00+00:00",
+        "source_metadata": {
+            "request": {
+                "source": "MODIS_SP",
+                "bbox": base_bbox,
+                "start_date": "2026-01-01",
+                "day_range": 5,
+            }
+        },
+        "quality_reports": [
+            {
+                "status": "imported",
+                "invalid_rows": 0,
+                "source_rows": 0,
+                "source_sha256": sha,
+                "request_metadata": {"request": {
+                    "source": "MODIS_SP", "bbox": base_bbox,
+                    "start_date": start, "day_range": 5,
+                }},
+                "filters": {
+                    "bbox": base_bbox,
+                    "start": f"{start}T00:00:00+00:00",
+                    "end": f"{end}T00:00:00+00:00",
+                    "polygon": None,
+                },
+            }
+            for start, end in windows
+        ],
+    }
+    q = query(
+        start_year=2026,
+        end_year=2026,
+        bbox=base_bbox,
+        sensors=["MODIS_TERRA", "MODIS_AQUA"],
+        complete_months=[],
+    )
+    res = analyze(q, [], [shared_empty_source])
+    for sensor in ("MODIS_TERRA", "MODIS_AQUA"):
+        jan = next(r for r in res["monthly"] if r["sensor_code"] == sensor and r["month"] == "2026-01")
+        assert jan["completeness"] == "complete"
+        assert jan["missing_data_status"] == "complete_insufficient_baseline"
+        assert jan["count"] == 0
+
+
+def test_caller_declarations_cannot_override_pre_operational_or_partial_transition_months():
+    q = query(
+        start_year=2002,
+        end_year=2002,
+        sensors=["MODIS_AQUA"],
+        complete_months=[
+            {"sensor_code": "MODIS_AQUA", "month": "2002-06", "reference": "manual-override"},
+            {"sensor_code": "MODIS_AQUA", "month": "2002-07", "reference": "manual-override"},
+        ],
+    )
+    res = analyze(q, [], [])
+    june = month(res, "2002-06")
+    july = month(res, "2002-07")
+    assert june["completeness"] == "unknown"
+    assert june["missing_data_status"] == "pre_operational_sensor"
+    assert june["count"] is None
+    assert july["completeness"] == "unknown"
+    assert july["missing_data_status"] == "sensor_transition_partial_month"
+    assert july["count"] is None
+
+
+def test_empty_response_filters_cannot_attest_dates_outside_actual_request():
+    from app.completeness import audit_selection_completeness
+
+    source = _api_window_source("empty", "MODIS", "2026-01-01", 5)
+    source["row_count"] = 0
+    source["quality_reports"] = [
+        {**source["quality_report"], "source_rows": 0, "filters": {
+            "start": f"2026-01-{day:02d}T00:00:00Z",
+            "end": "2026-02-01T00:00:00Z" if day == 31 else f"2026-01-{day+5:02d}T00:00:00Z",
+        }} for day in [1, 6, 11, 16, 21, 26, 31]
+    ]
+    audit = audit_selection_completeness(start_year=2026, end_year=2026,
+        sensors=["MODIS_TERRA"], bbox=[35, 30, 36, 31], polygon=None, sources=[source])
+    january = audit["MODIS_TERRA", "2026-01"]
+    assert january["completeness"] == "unknown"
+    assert "Only 5 of 31" in january["reason"]

@@ -2,18 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { sensorCodes } from '../types';
-import { comparisonLabel, comparisonValue, downloadArtifact, formatMissingDataStatus, historyCsv, historyRequest } from '../history';
+import { comparisonLabel, comparisonValue, downloadArtifact, formatMissingDataStatus, historyCsv, historyRequest, jordanBoundary } from '../history';
 import type { HistoryQuery, HistoryResult } from '../history';
 import HistoryTrend from '../components/HistoryTrend';
+import HarmonizedCalendar from '../components/HarmonizedCalendar';
 
 const display = (value: number | null) => value === null ? 'Unknown' : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 export default function History() {
   const selected = (useLocation().state as { historyQuery?: HistoryQuery } | null)?.historyQuery;
-  const [start, setStart] = useState(selected?.start_year ?? 2013), [end, setEnd] = useState(selected?.end_year ?? 2025);
-  const [baselineStart, setBaselineStart] = useState(selected?.baseline_start_year ?? 2013), [baselineEnd, setBaselineEnd] = useState(selected?.baseline_end_year ?? 2024);
+  const currentYear = new Date().getFullYear();
+  const [start, setStart] = useState(selected?.start_year ?? 2000), [end, setEnd] = useState(selected?.end_year ?? currentYear);
+  const [baselineStart, setBaselineStart] = useState(selected?.baseline_start_year ?? 2000), [baselineEnd, setBaselineEnd] = useState(selected?.baseline_end_year ?? currentYear - 1);
   const [bbox, setBbox] = useState(selected?.bbox?.join(',') ?? (selected ? '' : '34,29,40,34')), [polygon, setPolygon] = useState(selected?.polygon ? JSON.stringify(selected.polygon) : '');
-  const [sensor, setSensor] = useState<string>(selected?.sensors[0] ?? sensorCodes[0]);
+  const incomingSensors = selected?.sensors ?? sensorCodes;
+  const hasSubset = incomingSensors.length > 1 && incomingSensors.length < sensorCodes.length;
+  const [sensor, setSensor] = useState<string>(incomingSensors.length === 1 ? incomingSensors[0] : hasSubset ? 'selected' : 'all');
   const [confidence, setConfidence] = useState(selected?.confidence ?? '');
   const [percentile, setPercentile] = useState(selected?.percentile ?? 95), [minimum, setMinimum] = useState(selected?.min_baseline_years ?? 5);
   const [grid, setGrid] = useState(selected?.grid_size_deg ?? 1), [coverage, setCoverage] = useState(JSON.stringify(selected?.complete_months ?? []));
@@ -36,7 +40,7 @@ export default function History() {
         start_year: start, end_year: end, baseline_start_year: baselineStart, baseline_end_year: baselineEnd,
         bbox: bbox.trim() ? parts.map(Number) : undefined,
         polygon: polygon.trim() ? JSON.parse(polygon) : undefined,
-        sensors: [sensor], confidence: confidence || undefined,
+        sensors: sensor === 'all' ? [...sensorCodes] : sensor === 'selected' ? [...incomingSensors] : [sensor], confidence: confidence || undefined,
         percentile, min_baseline_years: minimum, grid_size_deg: grid, complete_months: JSON.parse(coverage),
       };
       const data = await historyRequest(query, current.signal);
@@ -53,6 +57,14 @@ export default function History() {
     finally { setExporting(false); }
   }
 
+  async function selectJordan() {
+    setError('');
+    try {
+      const boundary = await jordanBoundary();
+      setBbox(''); setPolygon(JSON.stringify(boundary)); setCoverage('[]'); setResult(null);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not load the Jordan boundary.'); }
+  }
+
   const selectedSensor = result?.query.sensors[0] ?? sensor;
   const rows = result?.monthly.filter(r => r.sensor_code === selectedSensor) ?? result?.monthly ?? [];
   const inspected = rows.find(r => r.month === selectedMonth)
@@ -64,7 +76,7 @@ export default function History() {
     <header className="page-header"><div><h1>Burning activity through time<span>.</span></h1><p>Compare equivalent months and a fixed area, with sensor context intact.</p></div></header>
     <section className="panel prose-panel"><h2>Analysis filters</h2>
       <form className="history-form" onSubmit={run}>
-        <label>Sensor<select value={sensor} onChange={e => setSensor(e.target.value)}>{sensorCodes.map(s => <option key={s}>{s}</option>)}</select></label>
+        <label>Sensor<select value={sensor} onChange={e => { setSensor(e.target.value); setCoverage('[]'); }}><option value="all">MODIS + VIIRS (harmonized calendar)</option>{hasSubset && <option value="selected">Selected satellites ({incomingSensors.join(', ')})</option>}{sensorCodes.map(s => <option key={s}>{s}</option>)}</select></label>
         <label>First year<input type="number" min="1900" max="2099" required value={start} onChange={e => setStart(Number(e.target.value))} /></label>
         <label>Last year<input type="number" min="1900" max="2099" required value={end} onChange={e => setEnd(Number(e.target.value))} /></label>
         <details className="history-wide advanced-history"><summary>Advanced analysis settings</summary><div className="history-form">
@@ -73,9 +85,10 @@ export default function History() {
         <label>Upper percentile<input type="number" min="50" max="99.99" step="0.01" required value={percentile} onChange={e => setPercentile(Number(e.target.value))} /></label>
         <label>Minimum reference years<input type="number" min="3" max="30" required value={minimum} onChange={e => setMinimum(Number(e.target.value))} /></label>
         <label>Angular cell size<select value={grid} onChange={e => setGrid(Number(e.target.value))}>{[0.25, 0.5, 1, 2, 5].map(v => <option key={v} value={v}>{v}°</option>)}</select></label>
-        <label>Confidence<select value={confidence} onChange={e => setConfidence(e.target.value)}><option value="">All</option>{['low', 'nominal', 'high'].map(v => <option key={v}>{v}</option>)}</select></label>
-        <label className="history-wide">Fixed bounding box · west,south,east,north<input value={bbox} onChange={e => setBbox(e.target.value)} /></label>
-        <label className="history-wide">Optional GeoJSON Polygon / MultiPolygon<textarea rows={3} value={polygon} onChange={e => setPolygon(e.target.value)} /></label>
+        <label>Confidence<select value={confidence} onChange={e => { setConfidence(e.target.value); setCoverage('[]'); }}><option value="">All</option>{['low', 'nominal', 'high'].map(v => <option key={v}>{v}</option>)}</select></label>
+        <label className="history-wide">Fixed bounding box · west,south,east,north<input value={bbox} onChange={e => { setBbox(e.target.value); setCoverage('[]'); }} /></label>
+        <label className="history-wide">Optional GeoJSON Polygon / MultiPolygon<textarea rows={3} value={polygon} onChange={e => { setPolygon(e.target.value); setCoverage('[]'); }} /></label>
+        <div className="history-wide"><button type="button" className="button secondary" onClick={selectJordan}>Use Jordan country boundary</button><p>Uses the same boundary as the Jordan country archive; analyze again after changing the area.</p></div>
         <label className="history-wide">Complete-month declarations (JSON)<textarea rows={4} value={coverage} onChange={e => setCoverage(e.target.value)} /></label>
         <p className="history-wide">Only declare months whose archive completeness you have audited for this exact area, sensor and confidence selection. Example: <code>{'[{"sensor_code":"MODIS_TERRA","month":"2013-01","reference":"your coverage audit"}]'}</code>. Without declarations, source-audited completeness is used where available; unattested months remain unknown. Bounding boxes and polygons intersect when both are supplied.</p>
         </div></details>
@@ -84,6 +97,7 @@ export default function History() {
     </section>
     {error && <p className="connection-notice" role="alert">{error}</p>}
     {result && <>
+      {result.monthly.some(r => r.missing_data_status === 'spatial_scope_mismatch') && <div className="connection-notice" role="status"><p>Some months are unknown because this area extends beyond the coverage established by the Jordan country files. Choose the Jordan country boundary and analyze again to use those files.</p><button type="button" className="button secondary" onClick={selectJordan}>Use Jordan country boundary</button></div>}
       <div className="history-actions">
         <span>{result.sources.length} source files · {result.algorithm_version} · Baseline {result.baseline_period ?? `${result.query.baseline_start_year}–${result.query.baseline_end_year}`}</span>
         <div className="header-actions">
@@ -91,6 +105,7 @@ export default function History() {
           <button type="button" className="button secondary" onClick={() => downloadArtifact(JSON.stringify(result, null, 2), 'pirx-history-analysis.json', 'application/json')}>Export full analysis JSON</button>
         </div>
       </div>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><div><h2>Harmonized activity calendar</h2><p>One MODIS-scale series, with native sensor views and fitted-parameter uncertainty.</p></div></div><HarmonizedCalendar result={result} sensor={selectedSensor} selected={selectedMonth} onSelect={setSelectedMonth} /></section>
       {inspected && <section className="panel history-panel">
         <div className="panel-heading">
           <div><h2>Selected month comparison · {inspected.month}</h2><p>Compare the selected month against its historical median and review baseline, missing-data status, and limitations.</p></div>

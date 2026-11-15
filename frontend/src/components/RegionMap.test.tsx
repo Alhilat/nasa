@@ -6,6 +6,22 @@ import type { Observations } from '../types';
 const state = vi.hoisted(() => ({
   handlers: {} as Record<string, (event: unknown) => void>,
   sources: new Set<string>(), addLayer: vi.fn(), queryRenderedFeatures: vi.fn(), canvas: null as HTMLCanvasElement | null, setStyle: vi.fn(), fitBounds: vi.fn(), addSource: vi.fn(),
+  drawFinish: null as ((id: string) => void) | null,
+  drawFeature: null as unknown, drawMode: vi.fn(), drawStop: vi.fn(), drawClear: vi.fn(),
+}));
+vi.mock('terra-draw-maplibre-gl-adapter', () => ({ TerraDrawMapLibreGLAdapter: class {} }));
+vi.mock('terra-draw', () => ({
+  TerraDraw: class {
+    enabled = false;
+    start() { this.enabled = true; }
+    stop() { this.enabled = false; state.drawStop(); }
+    setMode(mode: string) { state.drawMode(mode); }
+    clear() { state.drawClear(); }
+    on(event: string, callback: (id: string) => void) { if (event === 'finish') state.drawFinish = callback; }
+    getSnapshotFeature() { return state.drawFeature; }
+  },
+  TerraDrawPolygonMode: class {}, TerraDrawRectangleMode: class {}, TerraDrawRenderMode: class {},
+  ValidateNotSelfIntersecting: vi.fn(),
 }));
 vi.mock('maplibre-gl', () => ({ default: {
   Map: class {
@@ -62,22 +78,33 @@ it('restores rectangle and polygon drawing, cancel and clear around the existing
   const { container } = render(<RegionMap data={null} region={boundsRegion([34,29,40,34])} loading={false} onSelect={vi.fn()} onRegion={onRegion} onClear={onClear} />);
   expect(container.querySelector('.map-stage > .map-canvas')).toBeTruthy();
   expect(container.querySelector('.map-stage .map-tools')).toBeNull();
-  const clickPoint = (lng: number, lat: number) => act(() => state.handlers.click({ point: {}, lngLat: { lng, lat } }));
+  const finish = (geometry: unknown) => act(() => { state.drawFeature = { geometry }; state.drawFinish?.('synthetic-region'); });
   fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
-  clickPoint(35,30); clickPoint(37,32);
+  expect(state.drawMode).toHaveBeenLastCalledWith('rectangle');
+  finish(boundsRegion([35,30,37,32]));
   expect(onRegion).toHaveBeenLastCalledWith(boundsRegion([35,30,37,32]));
   fireEvent.click(screen.getByRole('button', { name: 'Draw polygon' }));
-  clickPoint(35,30); clickPoint(37,30); clickPoint(36,32);
-  fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+  expect(state.drawMode).toHaveBeenLastCalledWith('polygon');
+  finish({ type: 'Polygon', coordinates: [[[35,30],[37,30],[36,32],[35,30]]] });
   expect(onRegion).toHaveBeenLastCalledWith({ type: 'Polygon', coordinates: [[[35,30],[37,30],[36,32],[35,30]]] });
   fireEvent.click(screen.getByRole('button', { name: 'Draw polygon' }));
   fireEvent.click(screen.getByRole('button', { name: 'Cancel drawing' }));
-  expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+  expect(state.drawMode).toHaveBeenLastCalledWith('navigate');
   fireEvent.click(screen.getByRole('button', { name: 'Map bounds' }));
   expect(onRegion).toHaveBeenLastCalledWith(boundsRegion([34,29,40,34]));
   fireEvent.click(screen.getByRole('button', { name: 'Clear region' }));
   expect(onClear).toHaveBeenCalledTimes(1);
   expect(state.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'observations', source: 'observations', type: 'circle' }));
+});
+
+it('rejects a drawn antimeridian crossing and stops the adapter on cleanup', () => {
+  const onRegion = vi.fn();
+  const { unmount } = render(<RegionMap data={null} region={null} loading={false} onSelect={vi.fn()} onRegion={onRegion} onClear={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Draw polygon' }));
+  act(() => { state.drawFeature = { geometry: { type: 'Polygon', coordinates: [[[170,0],[-170,0],[-170,10],[170,0]]] } }; state.drawFinish?.('synthetic'); });
+  expect(onRegion).not.toHaveBeenCalled();
+  expect(screen.getByText(/For antimeridian regions use the coordinate form/)).toBeTruthy();
+  unmount(); expect(state.drawStop).toHaveBeenCalled();
 });
 
 it('retains observation selection with original properties and coordinates after drawing is cancelled', () => {

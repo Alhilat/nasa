@@ -1,0 +1,145 @@
+{
+  "algorithm_version": "historical-activity-v4",
+  "analysis_id": "f2edc89c1ea19d94e0a58f5db3c8ff791a92d6243d5d5d4f87c1cdec708b019e",
+  "assessed_unified_median_months": 96,
+  "calendar_version": "modis-calendar-v2",
+  "calibration_status": "experimental",
+  "csv_rows_verified": 156,
+  "note": "All screenshot values and exports come from the real NASA FIRMS archive. Completeness declarations are empty. Early/unsupported months remain unassessed.",
+  "query": {
+    "baseline_end_year": 2024,
+    "baseline_start_year": 2013,
+    "bbox": null,
+    "complete_months": [],
+    "confidence": null,
+    "end": null,
+    "end_year": 2025,
+    "grid_size_deg": 1,
+    "limit": 2000,
+    "min_baseline_years": 5,
+    "offset": 0,
+    "percentile": 95,
+    "polygon": {
+      "coordinates": [
+        [
+          [
+            36.068941,
+            29.197495
+          ],
+          [
+            34.956037,
+            29.356555
+          ],
+          [
+            34.922603,
+            29.501326
+          ],
+          [
+            35.420918,
+            31.100066
+          ],
+          [
+            35.4096288934078,
+            31.288090500000003
+          ],
+          [
+            35.397561,
+            31.489086
+          ],
+          [
+            35.545252,
+            31.782505
+          ],
+          [
+            35.545665,
+            32.393992
+          ],
+          [
+            35.719918,
+            32.709192
+          ],
+          [
+            36.834062,
+            32.312938
+          ],
+          [
+            37.0590355,
+            32.435374617906845
+          ],
+          [
+            38.792341,
+            33.378686
+          ],
+          [
+            39.195468,
+            32.161009
+          ],
+          [
+            39.004886,
+            32.010217
+          ],
+          [
+            37.0590355,
+            31.52266229225154
+          ],
+          [
+            37.002166,
+            31.508413
+          ],
+          [
+            37.0590355,
+            31.45135920019254
+          ],
+          [
+            37.221776796406786,
+            31.288090500000003
+          ],
+          [
+            37.998849,
+            30.5085
+          ],
+          [
+            37.66812,
+            30.338665
+          ],
+          [
+            37.503582,
+            30.003776
+          ],
+          [
+            37.0590355,
+            29.923091568197663
+          ],
+          [
+            36.740528,
+            29.865283
+          ],
+          [
+            36.501214,
+            29.505254
+          ],
+          [
+            36.068941,
+            29.197495
+          ]
+        ]
+      ],
+      "type": "Polygon"
+    },
+    "sensors": [
+      "MODIS_AQUA",
+      "MODIS_TERRA",
+      "VIIRS_NOAA20",
+      "VIIRS_NOAA21",
+      "VIIRS_SNPP"
+    ],
+    "start": null,
+    "start_year": 2013
+  },
+  "screenshots": [
+    "judges-dashboard.jpg",
+    "judges-median-calendar.jpg",
+    "judges-provenance.jpg"
+  ],
+  "verified_on": "2026-11-15"
+}

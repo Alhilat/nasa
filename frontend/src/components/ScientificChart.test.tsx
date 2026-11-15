@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import ScientificChart from './ScientificChart';
+import ScientificChart, { uncertaintyBandSeries } from './ScientificChart';
 import { downloadArtifact } from '../history';
 
 const state = vi.hoisted(() => ({ option: null as Record<string, unknown> | null }));
@@ -33,4 +33,12 @@ it('retains the empty chart state and withholds export when every value is missi
   render(<ScientificChart title="Unknown activity" labels={['2013-01']} series={[{ name: 'Test observations', values: [null], color: '#F47A32' }]} />);
   expect(screen.getByText('No comparable chart values')).toBeTruthy();
   expect(screen.queryByRole('button', { name: /as SVG/ })).toBeNull();
+});
+
+it('shades between absolute interval bounds and preserves unsupported gaps', () => {
+  const result = uncertaintyBandSeries({ lower: [8, null, 20], upper: [12, null, 30], color: '#8CC4EE' });
+  expect(result[0].data).toEqual([8, null, 20]);
+  expect(result[1].data).toEqual([4, null, 10]);
+  expect(result[1].areaStyle).toMatchObject({ opacity: 0.22 });
+  expect(result.every(s => s.connectNulls === false)).toBe(true);
 });

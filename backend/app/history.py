@@ -12,15 +12,17 @@ from statistics import median
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from shapely.geometry import Point, box, shape
 
+from app.calendar_statistics import median_comparisons
 from app.catalog import SENSOR_CODES
 from app.completeness import (
     AUDIT_VERSION,
     SENSOR_AVAILABILITY,
     audit_selection_completeness,
 )
+from app.harmonized_calendar import build_calendar, usable_calendar_month
 from app.schemas import ObservationQuery
 
-VERSION = "historical-activity-v2"
+VERSION = "historical-activity-v4"
 HISTORY_METRIC = "monthly_normalized_detection_count"
 NOTES = {
     "count": "Exact-payload deduplicated thermal detections, not unique fires or burned area. "
@@ -355,6 +357,7 @@ def analyze(
 
     # Evaluate registered calibration models for scope and transition eligibility.
     evaluated_models = []
+    approved_calendar_models = []
     applied_model = None
     for entry in sorted(calibration_models or [], key=lambda m: str(m.get("model_version", ""))):
         ok, rejection = _verify_calibration_model(entry, query, sensor_versions)
@@ -375,6 +378,8 @@ def analyze(
         )
         if ok and applied_model is None:
             applied_model = entry
+        if ok:
+            approved_calendar_models.append(entry)
 
     inputs = {
         "algorithm_version": VERSION,
@@ -413,7 +418,13 @@ def analyze(
                 label = f"{year:04d}-{month:02d}"
                 rows = buckets[sensor, label]
                 audit_info = audited[sensor, label]
-                if (sensor, label) in declared:
+                if (sensor, label) in declared and audit_info["missing_data_status"] not in {
+                    "pre_operational_sensor",
+                    "sensor_transition_partial_month",
+                    "nrt_unreconciled",
+                    "mixed_processing_revisions",
+                    "partial_month_archive",
+                }:
                     complete = True
                     coverage_ref = declared[sensor, label]
                     completeness_origin = "caller_declaration"
@@ -851,6 +862,31 @@ def analyze(
             "but excluded from standard-product historical baselines."
         )
 
+    median_source_index = {s["id"]: s for s in sources}
+    for sensor in query.sensors:
+        native_rows = [r for r in monthly if r["sensor_code"] == sensor]
+        comparisons = median_comparisons(
+            [{**r, "value": r["count"], "exclusion_reason": "unsupported_processing"
+              if r["count"] is not None and not usable_calendar_month(r, median_source_index)
+              else None} for r in native_rows],
+            baseline_start_year=query.baseline_start_year,
+            baseline_end_year=query.baseline_end_year, min_years=query.min_baseline_years,
+        )
+        for row in native_rows:
+            row["median_comparison"] = comparisons[row["month"]]
+    harmonized_calendar = build_calendar(
+        monthly, sources, query.sensors, approved_models=approved_calendar_models,
+        baseline_start_year=query.baseline_start_year,
+        baseline_end_year=query.baseline_end_year, min_baseline_years=query.min_baseline_years,
+        scope={"bbox": query.bbox, "polygon": query.polygon, "confidence": query.confidence,
+               "start_year": query.start_year, "end_year": query.end_year},
+    )
+    # The new calendar, including fitted artifacts, intervals and approval state, is
+    # part of export identity. Registering a model must invalidate a stale export.
+    analysis_id = hashlib.sha256(json.dumps(
+        {"inputs": inputs, "harmonized_calendar": harmonized_calendar},
+        sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode()).hexdigest()
     return {
         "analysis_id": analysis_id,
         "algorithm_version": VERSION,
@@ -872,6 +908,7 @@ def analyze(
             "status_counts": dict(sorted(status_counts.items())),
         },
         "harmonization": harmonization_info,
+        "harmonized_calendar": harmonized_calendar,
         "sensor_transitions": sensor_transitions,
         "limitations": global_limitations,
         "metric_explanations": NOTES,
@@ -919,6 +956,7 @@ def calendar_csv(result):
         "query_json",
         "source_metadata_json",
         "science_note",
+        "median_comparison_json",
     ]
     writer = csv.DictWriter(output, fieldnames=fields, lineterminator="\n")
     writer.writeheader()
@@ -938,6 +976,7 @@ def calendar_csv(result):
                 [source_index[s] for s in row["source_ids"] if s in source_index], sort_keys=True
             ),
             science_note=NOTES["count"] + " " + NOTES["coverage"],
+            median_comparison_json=json.dumps(row["median_comparison"], sort_keys=True),
         )
         writer.writerow(export)
     return output.getvalue()

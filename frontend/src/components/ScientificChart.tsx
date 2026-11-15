@@ -9,8 +9,18 @@ import { visualTheme as theme } from '../visualTheme';
 
 echarts.use([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
 type Series = { name: string; values: (number | null)[]; color: string; dashed?: boolean };
-export default function ScientificChart({ labels, series, title, metadata, kind = 'line' }: {
+type Band = { lower: (number | null)[]; upper: (number | null)[]; color: string };
+export function uncertaintyBandSeries(band?: Band) {
+  if (!band) return [];
+  const valid = (i: number) => band.lower[i] !== null && band.upper[i] !== null;
+  return [
+    { name: '95% parameter lower bound', type: 'line', stack: 'parameter-band', symbol: 'none', data: band.lower.map((v, i) => valid(i) ? v : null), connectNulls: false, lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, silent: true, tooltip: { show: false } },
+    { name: '95% parameter interval', type: 'line', stack: 'parameter-band', symbol: 'none', data: band.upper.map((v, i) => valid(i) ? v! - band.lower[i]! : null), connectNulls: false, lineStyle: { opacity: 0 }, areaStyle: { color: band.color, opacity: 0.22 }, silent: true, tooltip: { show: false } },
+  ];
+}
+export default function ScientificChart({ labels, series, title, metadata, kind = 'line', band }: {
   labels: string[]; series: Series[]; title: string; kind?: 'line' | 'bar'; metadata?: unknown;
+  band?: Band;
 }) {
   const target = useRef<HTMLDivElement>(null), instance = useRef<echarts.ECharts | null>(null);
   const hasData = series.some(s => s.values.some(value => value !== null));
@@ -27,14 +37,14 @@ export default function ScientificChart({ labels, series, title, metadata, kind 
       grid: { top: 25, right: 18, bottom: 65, left: 55 },
       xAxis: { type: 'category', data: labels, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: theme.rule, opacity: 0.3 } }, axisTick: { show: false } },
       yAxis: { type: 'value', min: 0, minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule, opacity: 0.3, type: 'dashed' } } },
-      series: series.map((s, i) => ({ name: s.name, type: kind, data: s.values, connectNulls: false,
+      series: [...uncertaintyBandSeries(band), ...series.map((s, i) => ({ name: s.name, type: kind, data: s.values, connectNulls: false,
         symbol: 'circle', symbolSize: 4, showSymbol: labels.length < 30, barMaxWidth: 35,
         lineStyle: { width: 2, type: s.dashed ? 'dashed' : 'solid' }, itemStyle: { color: colors[i] },
-      })),
+      }))],
     });
     const resize = new ResizeObserver(() => chart.resize()); resize.observe(target.current);
     return () => { resize.disconnect(); chart.dispose(); instance.current = null; };
-  }, [labels, series, hasData, kind]);
+  }, [labels, series, hasData, kind, band]);
   function exportSvg() {
     const svg = target.current?.querySelector('svg');
     if (!svg) return;

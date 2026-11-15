@@ -1,4 +1,5 @@
 import { API_BASE, request } from './api';
+import type { HarmonizedCalendar, MedianComparison } from './calendar.types';
 
 export type CoverageMonth = { sensor_code: string; month: string; reference: string };
 export type HistoryQuery = {
@@ -21,6 +22,7 @@ export type HistoryMonth = {
   anomaly_status: string; robust_z: number | null; year_over_year: Comparison;
   coverage_reference?: string | null; source_ids?: string[]; baseline_years?: number[];
   limitations?: string[];
+  median_comparison?: MedianComparison;
 };
 export type HarmonizationSummary = {
   available: boolean; applied: boolean; status: string; comparison_series: string;
@@ -47,6 +49,7 @@ export type HistoryResult = {
   baseline_period?: string; min_baseline_years?: number; observation_coverage?: string;
   completeness_summary?: CompletenessSummary;
   harmonization?: HarmonizationSummary;
+  harmonized_calendar?: HarmonizedCalendar;
   sensor_transitions?: SensorTransition[];
   limitations?: string[];
   metric_explanations: Record<string, string>; sources: {
@@ -86,6 +89,7 @@ export function formatMissingDataStatus(status?: string, completeness?: string):
 }
 export const historyRequest = (query: HistoryQuery, signal?: AbortSignal) =>
   request<HistoryResult>('/analytics/history', signal, query);
+export const jordanBoundary = () => request<object>('/analytics/history/jordan-boundary');
 
 export async function historyCsv(result: HistoryResult): Promise<string> {
   const response = await fetch(`${API_BASE}/analytics/history/export.csv`, {
@@ -105,13 +109,13 @@ export function downloadArtifact(content: string, filename: string, type: string
 }
 
 // A missing harmonized estimate must stay missing rather than reverting to native counts.
-export function comparisonValue(row: HistoryMonth): number | null {
+export function comparisonValue(row: Pick<HistoryMonth, 'comparison_series' | 'comparison_value' | 'count'>): number | null {
   return row.comparison_series === 'validated_harmonized'
     ? row.comparison_value ?? null
     : row.comparison_value ?? row.count;
 }
 
-export function comparisonLabel(rows: HistoryMonth[]): string {
+export function comparisonLabel(rows: Pick<HistoryMonth, 'comparison_series'>[]): string {
   return rows.some(row => row.comparison_series === 'validated_harmonized')
     ? 'Harmonized detections (reference sensor equivalent)'
     : 'Archived detections';

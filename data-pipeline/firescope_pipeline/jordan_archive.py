@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+from app.core.config import PROJECT_ENV_FILE
 from app.db import session_factory
 from dotenv import load_dotenv
 
@@ -22,7 +23,7 @@ def main():
     args = parser.parse_args()
     if not 2000 <= args.start_year <= args.end_year <= datetime.now(UTC).year:
         parser.error("Invalid year range")
-    load_dotenv(".env")
+    load_dotenv(PROJECT_ENV_FILE)
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     ledger_path = output / "ledger.json"

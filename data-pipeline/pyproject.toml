@@ -10,6 +10,7 @@ dependencies = ["firescope-api==0.1.0", "pandas>=2.2,<3", "numpy>=2.1,<3", "geop
 
 [project.scripts]
 firescope-pipeline = "firescope_pipeline.cli:main"
+pipeline = "firescope_pipeline.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["firescope_pipeline*"]

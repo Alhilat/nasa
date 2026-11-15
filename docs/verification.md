@@ -1,5 +1,28 @@
 # Foundation verification
 
+## November 15, 2026 judge update
+
+- The Python suite passed **285 tests** against isolated disposable PostGIS
+  schemas. Three existing Alembic deprecation warnings were non-failing.
+- The frontend suite passed **88 tests** after the median-color and multi-sensor
+  table changes. TypeScript and the Vite production build passed; Vite retains
+  its advisory warning about large map/chart chunks.
+- Required undefined-name Ruff checks passed for API, pipeline and tests. The new
+  median statistics module and its tests also passed full Ruff checks.
+- A real Jordan backfill through November 15 resumed successfully: 40 annual
+  files were skipped from verified checkpoints, all four API ranges were up to
+  date, and explicit gaps remained. The archive contains 13,079 detections and
+  164 source records. [Measured backfill summary](reports/backfill-judges-summary.json).
+- Browser review covered the live dashboard, median-departure calendar and source
+  catalog. All 156 exported harmonized monthly CSV rows matched the API response,
+  including median context; 96 months were assessed and the calibration remained
+  experimental. [Exact query and comparison record](reports/judges-calendar-verification.json).
+- [Fresh screenshots](screenshots/README.md) and the [judge requirement matrix](judges.md)
+  document the current build. Docker and remote CI execution remain unverified
+  on this host; no forecast accuracy or full WCAG audit is claimed.
+
+## Earlier foundation record
+
 This file records checks actually run in the development environment on 2026-11-14 and separates checks that require external infrastructure.
 
 ## Results

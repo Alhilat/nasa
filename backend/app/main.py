@@ -192,14 +192,40 @@ def sources(session: SessionDep, limit: int = Query(50, ge=1, le=200),
 
 
 @app.get(f"{API}/jobs", tags=["processing"])
-def jobs(session: SessionDep, limit: int = Query(50, ge=1, le=200)):
-    return [{
-        "id": j.id, "kind": j.kind, "status": j.status, "algorithm_version": j.algorithm_version,
-        "parameters": j.parameters, "started_at": j.started_at, "finished_at": j.finished_at,
-        "error_message": j.error_message, "output_metadata": j.output_metadata,
-    } for j in session.scalars(select(ProcessingJob).order_by(
-        ProcessingJob.started_at.desc(), ProcessingJob.id,
-    ).limit(limit))]
+def jobs(session: SessionDep, limit: int = Query(50, ge=1, le=200), kind: str | None = Query(None)):
+    statement = select(ProcessingJob)
+    if kind is not None:
+        statement = statement.where(ProcessingJob.kind == kind)
+    rows = list(
+        session.scalars(
+            statement.order_by(ProcessingJob.started_at.desc(), ProcessingJob.id).limit(limit)
+        )
+    )
+    if kind is None and not any(j.kind == "aggregate" and j.status == "succeeded" for j in rows):
+        extra = list(
+            session.scalars(
+                select(ProcessingJob)
+                .where(ProcessingJob.kind == "aggregate", ProcessingJob.status == "succeeded")
+                .order_by(ProcessingJob.started_at.desc(), ProcessingJob.id)
+                .limit(5)
+            )
+        )
+        seen = {j.id for j in rows}
+        rows.extend(j for j in extra if j.id not in seen)
+    return [
+        {
+            "id": j.id,
+            "kind": j.kind,
+            "status": j.status,
+            "algorithm_version": j.algorithm_version,
+            "parameters": j.parameters,
+            "started_at": j.started_at,
+            "finished_at": j.finished_at,
+            "error_message": j.error_message,
+            "output_metadata": j.output_metadata,
+        }
+        for j in rows
+    ]
 
 
 @app.get(f"{API}/quality-reports/{{job_id}}", tags=["provenance"])

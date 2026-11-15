@@ -35,6 +35,43 @@ from sqlalchemy.orm import sessionmaker
 pytestmark = pytest.mark.integration
 
 
+@pytest.mark.parametrize("legacy", [False, True])
+def test_empty_deduplicated_windows_recover_legacy_job_requests(audit_factory, monkeypatch, legacy):
+    from app.history import HistoryQuery
+    from app.history_routes import load_history
+    from firescope_pipeline import service
+
+    if legacy:
+        def legacy_report(**kwargs):
+            # Create the old report format at insertion; archived reports stay immutable.
+            kwargs["report"] = {k: v for k, v in kwargs["report"].items() if k != "request_metadata"}
+            return DataQualityReport(**kwargs)
+        monkeypatch.setattr(service, "DataQualityReport", legacy_report)
+
+    content = b"latitude,longitude,acq_date,acq_time,satellite,confidence,version\n"
+    for day in [1, 6, 11, 16, 21, 26, 31]:
+        start = datetime(2026, 1, day, tzinfo=UTC)
+        end = min(start + timedelta(days=5), datetime(2026, 2, 1, tzinfo=UTC))
+        import_source(audit_factory, content, filename="synthetic-empty.csv", sensor="MODIS",
+            product_version="native", processing_level="standard",
+            source_url="https://firms.modaps.eosdis.nasa.gov/api/area/", retrieved_at=end,
+            selection=Selection(start=start, end=end, bbox=(35, 30, 36, 31)),
+            metadata={"request": {"source": "MODIS_SP", "bbox": [35, 30, 36, 31],
+                "start_date": start.date().isoformat(), "day_range": 5}})
+    query = HistoryQuery(start_year=2026, end_year=2026, bbox=[35, 30, 36, 31],
+        sensors=["MODIS_TERRA"])
+    with audit_factory() as session:
+        current = load_history(session, query)
+    assert current["monthly"][0]["completeness"] == "complete"
+    assert current["monthly"][0]["count"] == 0
+    assert len(current["sources"]) == 1
+    with audit_factory() as session:
+        replay = load_history(session, query)
+    assert replay["analysis_id"] == current["analysis_id"]
+    requests = current["sources"][0]["quality_reports"]
+    assert len({r["request_metadata"]["request"]["start_date"] for r in requests}) == 7
+
+
 def test_completeness_uses_persisted_import_scope_and_survives_reimport(audit_factory):
     from app.completeness import JORDAN_COUNTRY_GEOJSON
     from app.history import HistoryQuery
@@ -181,6 +218,60 @@ def isolated_database_factory():
             # Only this fixture's UUID-named schema is removed. No existing schema is touched.
             connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin_engine.dispose()
+
+
+def test_backfill_interrupt_resume_and_repeat_are_transactional(audit_factory, tmp_path, monkeypatch):
+    """All source rows below are synthetic and remain in this disposable schema."""
+    import json
+    from datetime import date
+
+    import httpx
+    from app.models import ImportCheckpoint
+    from firescope_pipeline import service
+    from firescope_pipeline.backfill import backfill
+
+    downloads = []
+    def transport(request):
+        if request.url.path.endswith("yearly_summary_files.txt"):
+            return httpx.Response(200, text=(
+                "modis_2013_Jordan.csv,100,synthetic-v1\n"
+                "modis_2014_Jordan.csv,100,synthetic-v1"))
+        year = 2013 if "2013" in request.url.path else 2014
+        downloads.append(year)
+        return httpx.Response(200, text=(
+            "latitude,longitude,acq_date,acq_time,satellite,confidence,frp,version\n"
+            f"31.5,35.8,{year}-06-15,0030,T,80,9,6.1\n"))
+
+    inspect = service.inspect_csv
+    def interrupt_second(content, *args, **kwargs):
+        if b"2014-06-15" in content:
+            raise KeyboardInterrupt()
+        return inspect(content, *args, **kwargs)
+
+    def run(client):
+        return backfill(audit_factory, None, output=tmp_path, start=date(2013, 1, 1),
+                        through=date(2014, 12, 31), as_of=date(2026, 11, 15),
+                        polygon=None, public_client=client)
+
+    with httpx.Client(transport=httpx.MockTransport(transport)) as client:
+        monkeypatch.setattr(service, "inspect_csv", interrupt_second)
+        with pytest.raises(KeyboardInterrupt):
+            run(client)
+        assert json.loads((tmp_path / "report.json").read_text())["status"] == "interrupted"
+        with audit_factory() as session:
+            assert session.scalar(select(func.count()).select_from(ImportCheckpoint)) == 1
+            assert session.scalar(select(func.count()).select_from(Observation)) == 1
+            assert session.scalar(select(func.count()).select_from(ProcessingJob).where(
+                ProcessingJob.status == "running")) == 0
+        monkeypatch.setattr(service, "inspect_csv", inspect)
+        resumed = run(client)
+        assert resumed["annual_skipped"] == 1
+        assert run(client)["annual_skipped"] == 2
+    assert downloads == [2013, 2014]
+    with audit_factory() as session:
+        assert session.scalar(select(func.count()).select_from(ImportCheckpoint)) == 2
+        assert session.scalar(select(func.count()).select_from(Observation)) == 2
+        assert session.scalar(select(func.count()).select_from(SourceFile)) == 2
 
 
 @pytest.fixture(scope="module")

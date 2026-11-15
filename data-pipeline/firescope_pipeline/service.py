@@ -110,6 +110,7 @@ def import_source(factory, content: bytes, *, filename: str, sensor: str, produc
             "raw_inserted": raw_inserted, "normalized_inserted": normalized_inserted,
             "selected_existing_or_duplicate": len(batch.selected) - normalized_inserted,
             "source_id": str(source.id), "job_id": str(job_id),
+            "request_metadata": metadata or {},
             "deduplication_policy": "exact payload only; changed values and NRT/standard retained",
         }
         session.add(DataQualityReport(job_id=job_id, source_id=source.id, report=report))

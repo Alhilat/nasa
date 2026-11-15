@@ -1,0 +1,77 @@
+{
+  "annual_files_in_plan": 40,
+  "annual_files_skipped_by_committed_checkpoint": 40,
+  "api_ranges": [
+    {
+      "imports": 0,
+      "source": "MODIS_SP",
+      "status": "up_to_date"
+    },
+    {
+      "imports": 0,
+      "source": "MODIS_NRT",
+      "status": "up_to_date"
+    },
+    {
+      "imports": 0,
+      "source": "VIIRS_SNPP_SP",
+      "status": "up_to_date"
+    },
+    {
+      "imports": 0,
+      "source": "VIIRS_SNPP_NRT",
+      "status": "up_to_date"
+    }
+  ],
+  "archive_normalized_observations": 13079,
+  "archive_source_files": 164,
+  "availability": {
+    "MODIS_NRT": [
+      "2026-09-01",
+      "2026-11-15"
+    ],
+    "MODIS_SP": [
+      "2000-11-01",
+      "2026-08-31"
+    ],
+    "VIIRS_SNPP_NRT": [
+      "2026-08-01",
+      "2026-11-02"
+    ],
+    "VIIRS_SNPP_SP": [
+      "2012-01-20",
+      "2026-07-31"
+    ]
+  },
+  "catalog": {
+    "retrieved_at": "2026-11-15T09:37:29.621183+00:00",
+    "sha256": "a85c319c545f0004ffaa659e5063ed0547cc59c409e16d2a54fdcf37e7a33f8c",
+    "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/yearly_summary_files.txt"
+  },
+  "current_day_provisional": true,
+  "gaps": [
+    {
+      "end": "2000-11-01",
+      "reason": "pre_operational_sensor",
+      "sensor": "MODIS",
+      "start": "2000-01-01"
+    },
+    {
+      "end": "2012-01-20",
+      "reason": "pre_operational_sensor",
+      "sensor": "VIIRS_SNPP",
+      "start": "2000-01-01"
+    },
+    {
+      "end": "2026-11-16",
+      "reason": "outside_published_availability",
+      "sensor": "VIIRS_SNPP",
+      "start": "2026-11-03"
+    }
+  ],
+  "note": "Real NASA FIRMS archive. Availability gaps describe this fetch plan, not a claim that earlier archived observations are absent. Counts are thermal detections, not unique fires.",
+  "requested_start": "2000-01-01",
+  "requested_through": "2026-11-15",
+  "status": "completed_with_gaps",
+  "verified_on": "2026-11-15"
+}

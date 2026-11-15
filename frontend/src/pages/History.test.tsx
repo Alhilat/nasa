@@ -2,14 +2,59 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import History from './History';
 import { MemoryRouter } from 'react-router-dom';
-import { historyRequest } from '../history';
+import { historyRequest, jordanBoundary } from '../history';
 import type { HistoryResult } from '../history';
 
 vi.mock('../components/HistoryTrend', () => ({ default: () => <div>Historical trend chart</div> }));
 vi.mock('../history', async importOriginal => ({
-  ...await importOriginal<typeof import('../history')>(), historyRequest: vi.fn(),
+  ...await importOriginal<typeof import('../history')>(), historyRequest: vi.fn(), jordanBoundary: vi.fn(),
 }));
 afterEach(() => cleanup());
+
+it('keeps equal months, years and grid cells distinct and names sensors in every comparison table', async () => {
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const sensors = ['MODIS_TERRA', 'MODIS_AQUA'];
+  vi.mocked(historyRequest).mockImplementation(async query => ({
+    query: { ...query, sensors }, analysis_id: 'synthetic-multisensor', algorithm_version: 'test',
+    sources: [], metric_explanations: {}, concentration: [],
+    monthly: sensors.map(sensor_code => ({ sensor_code, month: '2013-01', count: 1,
+      completeness: 'unknown', historical_median: null, baseline_size: 0, lower_threshold: null,
+      upper_threshold: null, anomaly_status: 'incomplete_period', robust_z: null,
+      year_over_year: { difference: null, percent_change: null } })),
+    yearly: sensors.map(sensor_code => ({ sensor_code, year: 2013, count: null, observed_count: 1,
+      complete_months: [], year_over_year: { difference: null, percent_change: null, matched_months: [] } })),
+    seasonal_profiles: sensors.map(sensor_code => ({ sensor_code, calendar_month: 1, median: 1, sample_size: 1 })),
+    spatial: { type: 'FeatureCollection', features: sensors.map(sensor_code => ({
+      geometry: { type: 'Point', coordinates: [35,31] },
+      properties: { sensor_code, grid_x: 215, grid_y: 122, count: 1, share: 1 },
+    })) },
+  } as unknown as HistoryResult));
+  render(<MemoryRouter><History /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Analyze archive' }));
+  await screen.findByText('Monthly activity calendar and anomalies');
+  for (const sensor of sensors) expect(screen.getAllByRole('cell', { name: sensor })).toHaveLength(4);
+  expect(errors.mock.calls.some(args => args.some(v => String(v).includes('same key')))).toBe(false);
+});
+
+it('lets the user select the audited Jordan boundary after a scope mismatch', async () => {
+  const boundary = { type: 'Polygon', coordinates: [[[35, 30], [36, 30], [35, 31], [35, 30]]] };
+  vi.mocked(jordanBoundary).mockResolvedValue(boundary);
+  vi.mocked(historyRequest).mockImplementation(async query => ({
+    query, sources: [], monthly: [{ sensor_code: query.sensors[0], month: '2013-01', count: null,
+      completeness: 'unknown', missing_data_status: 'spatial_scope_mismatch', historical_median: null,
+      baseline_size: 0, lower_threshold: null, upper_threshold: null, anomaly_status: 'incomplete_period',
+      year_over_year: { percent_change: null } }], yearly: [], seasonal_profiles: [],
+    spatial: { features: [] }, concentration: [], metric_explanations: {},
+  } as unknown as HistoryResult));
+  render(<MemoryRouter initialEntries={[{ pathname: '/history', state: { historyQuery: { sensors: ['MODIS_TERRA', 'VIIRS_SNPP'], complete_months: [{ sensor_code: 'MODIS_TERRA', month: '2013-01', reference: 'old area' }] } } }]}><History /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Analyze archive' }));
+  expect(vi.mocked(historyRequest).mock.lastCall?.[0].sensors).toEqual(['MODIS_TERRA', 'VIIRS_SNPP']);
+  expect((await screen.findByRole('status')).textContent).toContain('extends beyond');
+  fireEvent.click(screen.getByRole('status').querySelector('button')!);
+  await screen.findByDisplayValue(JSON.stringify(boundary));
+  fireEvent.click(screen.getByRole('button', { name: 'Analyze archive' }));
+  expect(vi.mocked(historyRequest).mock.lastCall?.[0]).toMatchObject({ polygon: boundary, bbox: undefined, complete_months: [], sensors: ['MODIS_TERRA', 'VIIRS_SNPP'] });
+});
 
 it('runs an explicit area/sensor selection and renders unknown counts without zero filling', async () => {
   vi.mocked(historyRequest).mockImplementation(async query => ({
@@ -24,7 +69,7 @@ it('runs an explicit area/sensor selection and renders unknown counts without ze
   expect(await screen.findByText('Monthly activity calendar and anomalies')).toBeTruthy();
   expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
   expect(vi.mocked(historyRequest).mock.calls[0][0]).toMatchObject({
-    bbox: [34, 29, 40, 34], sensors: ['MODIS_TERRA'], complete_months: [],
+    bbox: [34, 29, 40, 34], sensors: ['MODIS_TERRA', 'MODIS_AQUA', 'VIIRS_SNPP', 'VIIRS_NOAA20', 'VIIRS_NOAA21'], complete_months: [],
   });
   expect(screen.getByText('incomplete period')).toBeTruthy();
 });

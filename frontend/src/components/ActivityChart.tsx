@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
 import { LineChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent } from 'echarts/components';
+import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ChartNoAxesCombined } from 'lucide-react';
 import type { Summary } from '../types';
 import { visualTheme as theme } from '../visualTheme';
+import { sensorColor } from '../colorScales';
 
-echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer]);
+echarts.use([LineChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
 
 export default function ActivityChart({ summary }: { summary: Summary | null }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -22,13 +23,15 @@ export default function ActivityChart({ summary }: { summary: Summary | null }) 
       backgroundColor: theme.surface,
       textStyle: { fontFamily: theme.fontUI },
       tooltip: { trigger: 'axis', renderMode: 'richText', backgroundColor: theme.white, borderWidth: 0, textStyle: { color: theme.text, fontFamily: theme.fontData } },
-      grid: { top: 18, right: 18, bottom: 30, left: 45 },
+      legend: { bottom: 0, type: 'scroll', textStyle: { color: theme.muted } },
+      grid: { top: 18, right: 18, bottom: 55, left: 45 },
       xAxis: { type: 'category', data: days, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 } },
       yAxis: { type: 'value', minInterval: 1, axisLabel: { color: theme.muted, fontFamily: theme.fontData, fontSize: 11 }, splitLine: { lineStyle: { color: theme.rule, opacity: 0.3 } } },
       series: sensors.map((sensor, index) => ({
         name: sensor, type: 'line', connectNulls: false, symbolSize: 5,
+        symbol: sensor.startsWith('MODIS') ? 'circle' : 'rect',
         lineStyle: { width: 2, type: index % 2 ? 'dashed' : 'solid' },
-        itemStyle: { color: sensor.startsWith('MODIS') ? theme.orange : theme.viirs },
+        itemStyle: { color: sensorColor(sensor) },
         data: days.map(day => summary.daily.find(d => d.day === day && d.sensor_code === sensor)?.count ?? null),
       })),
     });

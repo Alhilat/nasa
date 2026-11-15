@@ -9,7 +9,8 @@ export function archiveDates(archive: Summary): { first: string; last: string } 
   return { first: first.toISOString().slice(0, 10), last: last.toISOString().slice(0, 10) };
 }
 
-export type Region = { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] };
+export type Region = { type: 'Polygon'; coordinates: number[][][] }
+  | { type: 'MultiPolygon'; coordinates: number[][][][] };
 export type Comparison = {
   job_id: string; algorithm_version: string; parameters: Record<string, unknown>;
   provenance: Record<string, unknown>; scope: string; method: string;
@@ -23,7 +24,7 @@ export function parseBounds(value: string): [number, number, number, number] {
   if (parts.length !== 4 || parts.some(v => !v) || numbers.some(v => !Number.isFinite(v)))
     throw new Error('Enter four finite bounds: west, south, east, north.');
   const [west, south, east, north] = numbers;
-  if (west < -180 || west > 180 || east < -180 || east > 180 || west === east || south < -90 || north > 90 || south >= north)
+  if (west < -180 || west > 180 || east < -180 || east > 180 || west === east || (west === 180 && east === -180) || south < -90 || north > 90 || south >= north)
     throw new Error('Use distinct longitudes in −180…180 and ordered latitudes in −90…90.');
   return numbers as [number, number, number, number];
 }

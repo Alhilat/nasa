@@ -1,163 +1,80 @@
-# PIRX
+# PIRX — Satellite fire history
 
-[Gemini scientific intelligence](docs/gemini-intelligence.md) adds a tool-grounded
-conversation and exportable AI reports to the dashboard. All measurements and statistics
-come from the Python analytical engine; the Gemini key stays on the FastAPI server.
+PIRX is a web application for exploring NASA FIRMS MODIS and VIIRS thermal detections, building a MODIS-scale burning-activity calendar, and comparing months with their historical context.
 
-The [scientific dashboard](docs/dashboard.md) is the application's home route: a dark,
-responsive map workspace with region drawing, a burning-activity calendar, historical
-trends, descriptive anomalies, saved-grid comparisons and provenance-aware exports.
+**Start here:** [Judge walkthrough and requirement-to-code table](docs/judges.md).
 
-Historical intelligence is available at `/history`: monthly/yearly calendars, seasonal
-profiles, matched-month comparisons, descriptive percentile anomalies, spatial
-concentration, trend charts and reproducible exports. See
-[the historical intelligence contract and reproduction commands](docs/historical-intelligence.md).
+![Real Jordan archive: historical-median calendar](docs/screenshots/judges-median-calendar.jpg)
 
-Satellite Fire Intelligence Platform foundation for the NASA Space Apps Challenge 2026 project brief: Harmonization of MODIS and VIIRS Hot Spots.
+## What you can explore
 
-PIRX archives original FIRMS CSV files, separates raw records from normalized observations, supports geographic exploration, and produces reproducible sensor/day/grid summaries. Optional MAP_KEY API synchronization supports recent observations with retries and transactional checkpoints. **No scientific observations are bundled, generated, or downloaded automatically. No machine learning is implemented.** Test fixtures are explicitly synthetic and isolated from the application archive.
+- Draw a rectangle or polygon, enter latitude/longitude bounds, and apply the same area to the map and historical analysis.
+- Switch **Harmonized / MODIS / VIIRS**. Inspect model status, source identity, missing months and fitted-parameter uncertainty.
+- Color the calendar by **activity intensity** or **departure from the historical median**, with signed values, labeled legends and colorblind-safe scales.
+- Export observations, monthly comparisons, the harmonized calendar, analysis JSON and chart SVGs with provenance.
 
-## MODIS/VIIRS statistical harmonization
+The scientific calculations run in testable Python functions. FastAPI loads the archive; React displays the results. Shared calendar types are generated from the backend schema. Optional Gemini narration uses bounded Python evidence and a server-only key.
 
-The validation-first calibration module compares baseline equal-area aggregation, seasonal regression and seasonal quantile mapping. It retains sensor-specific results, null missing bins, blocked year/region tests, error metrics, trend checks, bootstrap intervals and content-addressed model versions. **Lower agreement error does not automatically approve a calibration.** The real Jordan and supplementary Levant demonstrations both decline operational use.
+## Run the application
 
-See [the methodology and exact reproduction commands](docs/harmonization-methodology.md). The primary occupancy metric requires independently curated common-cell-day exposure. Detection-only CSVs support an explicitly conditional proxy, with no invented zeros or physical fire counts. Before/after figures and measured result summaries are under `docs/reports/harmonization/`; see [the measured findings](docs/harmonization-results.md).
+Requirements: Docker Engine/Desktop with Compose v2. For a fresh checkout, create `.env` from `.env.example`; preserve any existing configuration. Then run from the repository root:
 
-## Repository
-
-```text
-frontend/         React + TypeScript + Vite + Tailwind, MapLibre, Apache ECharts
-backend/          FastAPI, SQLAlchemy/GeoAlchemy, Alembic migrations
-data-pipeline/    FIRMS CSV validation, provenance, deterministic aggregation CLI
-tests/            Parser, spatial, API, numerical and PostGIS integration checks
-docs/             Architecture, API, science methodology, operations and checks
-infrastructure/   Dockerfiles, PostGIS Compose stack, SPA server configuration
-```
-
-## Start with Docker (recommended)
-
-For the existing portable installation on the development workstation, see [Windows local runtime and restart commands](docs/local-runtime.md).
-
-Install Docker Engine/Desktop with Compose v2. Run every command below from the repository root. The stack uses PostgreSQL 17 + PostGIS 3.5, builds the API and UI, and applies migrations before starting the API.
-
-PowerShell:
-
-```powershell
-Copy-Item .env.example .env
+```sh
 docker compose --env-file .env -f infrastructure/compose.yaml up --build -d
-docker compose --env-file .env -f infrastructure/compose.yaml ps -a
-Invoke-RestMethod http://localhost:8000/api/v1/health/ready
 ```
 
-Bash:
+Open [PIRX](http://localhost:8080) or [API documentation](http://localhost:8000/docs). A fresh database contains sensor metadata and shows an empty archive until real observations are imported.
 
-```bash
-cp .env.example .env
-docker compose --env-file .env -f infrastructure/compose.yaml up --build -d
-docker compose --env-file .env -f infrastructure/compose.yaml ps -a
-curl --fail http://localhost:8000/api/v1/health/ready
+For the existing Windows workstation, use [local runtime and restart instructions](docs/local-runtime.md); its development UI is [localhost:5173](http://localhost:5173). For a fresh Python/Node setup, see [local development](docs/development.md).
+
+## Load real data from 2000 through today
+
+In the installed project environment:
+
+```sh
+pipeline backfill --region jordan
 ```
 
-Open [PIRX](http://localhost:8080), [API documentation](http://localhost:8000/docs), or [public configuration](http://localhost:8000/api/v1/config). A fresh database has sensor metadata only. The explorer displays an empty archive until you import real observations.
-
-If startup fails, inspect `docker compose --env-file .env -f infrastructure/compose.yaml logs migrate api db`. To stop without deleting the archive:
-
-```bash
-docker compose --env-file .env -f infrastructure/compose.yaml down
-```
-
-The `postgis_data` named volume retains source files, raw rows and job history. Do not remove it if the archive must be kept.
-
-## Import real NASA FIRMS observations
-
-See [the ingestion guide](docs/ingestion.md) and [Jordan archive audit](docs/jordan-archive.md) for the historical import, provenance, coverage limits and resumable updates. The historical profile still defaults to the 2013–2025 calibration interval; override its dates when importing outside that interval. NASA's current annual MODIS files declare version 6.2, not 6.1.
-
-Download a real FIRMS CSV (combined Terra/Aqua MODIS exports are supported with `--sensor MODIS`) from [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/content/active_fire/). For VIIRS, select the matching platform. Use `--product-version native` to require and retain per-row product versions, or an exact expected version to reject mismatches. Put your CSV in `data/` under the repository root (create the folder if needed). Nothing in that folder is committed.
-
-Use the exact `version` field from your file, the matching platform, its actual product processing level, a public source location, and the actual retrieval timestamp. The following is a **command template**, not a bundled dataset; replace the path, URL and timestamps with your real source details:
-
-```bash
-docker compose --env-file .env -f infrastructure/compose.yaml --profile tools run --rm pipeline ingest /data/your-modis-terra.csv --sensor MODIS_TERRA --source-url https://firms.modaps.eosdis.nasa.gov/content/active_fire/ --product-version 6.1 --processing-level standard --retrieved-at 2026-11-14T08:00:00Z
-```
-
-Choose `MODIS` for combined MODIS exports, or `MODIS_TERRA`, `MODIS_AQUA`, `VIIRS_SNPP`, `VIIRS_NOAA20`, or `VIIRS_NOAA21`. VIIRS confidence must use the FIRMS `l/n/h` representation; MODIS uses its native numeric 0–100 scale. The parser validates satellite and instrument, rejects malformed or invalid rows, and imports the entire file in one transaction. Repeated exact payloads share a normalized observation with all original source copies linked. Reimporting the same file with wider filters adds newly selected rows. Changed measurements and NRT/standard versions remain distinct.
-
-Create a versioned common-grid product for a bounded UTC interval (end exclusive):
-
-```bash
-docker compose --env-file .env -f infrastructure/compose.yaml --profile tools run --rm pipeline aggregate --start 2024-01-01T00:00:00Z --end 2025-01-01T00:00:00Z --grid-size 0.25
-```
-
-Use dates covered by your archive. This produces sensor-specific UTC daily angular grid summaries and source lineage from canonical normalized records. It does **not** calibrate sensor differences, merge distinct revisions/overpasses, estimate burned area, or infer coverage. See [the science contract](docs/science.md).
-
-## Develop locally
-
-Prerequisites: Python 3.12+, Node 22.12+, pnpm 11.25.0, and PostGIS (or start only the Compose database). Keep the root `.env` copied from `.env.example` and use `localhost` in its database URL for a host-run API.
-
-PowerShell, from the repository root:
+Windows without activating the virtual environment:
 
 ```powershell
-Copy-Item .env.example .env
-docker compose --env-file .env -f infrastructure/compose.yaml up -d db
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.lock
-.\.venv\Scripts\python.exe -m pip install --no-deps -e ./backend -e ./data-pipeline
-.\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head
-npm install --global pnpm@11.25.0
-pnpm --dir frontend install --frozen-lockfile
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\.venv\Scripts\pipeline.exe backfill --region jordan
 ```
 
-In a second PowerShell terminal at the repository root:
+Stop with **Ctrl+C**, then repeat the command to resume. Annual country files, standard API products and NRT tails are selected from NASA's current availability. Missing dates and pre-operational sensor periods are reported explicitly; they are never converted to observed zeros. `MAP_KEY` is server-side and optional for annual files, required for API tails.
 
-```powershell
-pnpm --dir frontend dev
-```
+On November 15, 2026, the real Jordan rerun skipped all **40** committed annual files and found its four API ranges up to date. The archive retained **13,079** normalized detections. The S-NPP API fetch plan ends November 2 and records the unsupported tail. See the [measured backfill summary](docs/reports/backfill-judges-summary.json) and [backfill guide, including Docker](docs/backfill.md).
 
-Bash, from the repository root:
+## Scientific status
 
-```bash
-cp .env.example .env
-docker compose --env-file .env -f infrastructure/compose.yaml up -d db
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -r requirements.lock
-.venv/bin/python -m pip install --no-deps -e ./backend -e ./data-pipeline
-.venv/bin/python -m alembic -c backend/alembic.ini upgrade head
-npm install --global pnpm@11.25.0
-pnpm --dir frontend install --frozen-lockfile
-.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-# Separate terminal, from the root:
-pnpm --dir frontend dev
-```
+**Harmonization is experimental unless a registered model passes the scope-specific approval checks.** The Jordan and supplementary Levant calibration studies both decline operational use. Regression and quantile mapping can produce a retrospective reference-scale calendar; improved sensor agreement does not establish physical fire truth.
 
-Open [the development UI](http://localhost:5173). Vite reads the repository root `.env`; `VITE_*` values are public, and must not contain credentials. Use the same CLI locally with `.venv/bin/python -m firescope_pipeline.cli` (PowerShell: `.\.venv\Scripts\python.exe -m firescope_pipeline.cli`) followed by `ingest` or `aggregate` and the flags above. Local file paths replace `/data/...`.
+Median colors use complete earlier instances of the same calendar month. Unknown completeness, insufficient history, extrapolation and unapproved mapped values remain unassessed. Bootstrap bands describe fitted-parameter uncertainty, not prediction intervals. Thermal detections are not unique fires, burned area or fire-risk forecasts. Environmental causation and operational forecasting are not implemented.
 
-## Run checks
+Read the [harmonized-calendar contract](docs/harmonized-calendar.md), [accessibility and color rules](docs/accessibility.md), [measured calibration findings](docs/harmonization-results.md), and [science contract](docs/science.md).
 
-PowerShell:
+## Verify and reproduce
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 pnpm --dir frontend test
 pnpm --dir frontend build
-.\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head --sql
+.\.venv\Scripts\python.exe scripts/generate_calendar_types.py
 ```
 
-Bash:
+PostGIS tests use an isolated disposable schema when `TEST_DATABASE_URL` is configured. [Verification details](docs/verification.md) and [local development commands](docs/development.md) explain database-backed checks and offline replay. Synthetic test fixtures are isolated from the application archive; no observations are fabricated for the demo.
 
-```bash
-.venv/bin/python -m pytest -q
-pnpm --dir frontend test
-pnpm --dir frontend build
-.venv/bin/python -m alembic -c backend/alembic.ini upgrade head --sql
-```
+## Code and documentation
 
-PostGIS integration tests skip unless `TEST_DATABASE_URL` is set. For the full database-backed suite via Compose:
+| Location | Responsibility |
+| --- | --- |
+| `backend/app/` | API, shared contracts, pure historical/calendar statistics |
+| `data-pipeline/firescope_pipeline/` | FIRMS validation, backfill, transactional ingestion and calibration |
+| `frontend/src/` | Map, calendars, accessible scales, charts and exports |
+| `tests/` | Numerical, API, parser, interruption/resume and PostGIS checks |
+| `docs/` | Judge evidence, methods, screenshots and reproducibility |
+| `infrastructure/` | PostGIS, API and frontend containers |
 
-```bash
-docker compose --env-file .env -f infrastructure/compose.yaml --profile test run --build --rm tests
-```
+Further references: [architecture](docs/architecture.md), [ingestion](docs/ingestion.md), [API](docs/api.md), [operations](docs/operations.md), [map drawing](docs/map-drawing.md), [Gemini intelligence](docs/gemini-intelligence.md).
 
-Alternatively set `TEST_DATABASE_URL` to a test PostGIS database and run pytest. The tests create and remove their own UUID-named schema. The database user must be able to create schemas and enable PostGIS. GitHub Actions runs this suite against PostGIS and builds/tests the frontend.
-
-See [verification results](docs/verification.md), [architecture](docs/architecture.md), [API contract](docs/api.md), and [operations](docs/operations.md) for implementation limits and deployment details.
+Data attribution: [NASA FIRMS / EOSDIS](https://firms.modaps.eosdis.nasa.gov/content/active_fire/). Source checksums, product versions, processing levels and retrieval timestamps are retained. PIRX is an independent Space Apps project, not an official NASA service.

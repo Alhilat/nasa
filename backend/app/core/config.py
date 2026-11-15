@@ -1,19 +1,21 @@
 import json
 import re
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 GEMINI_MODEL_PATTERN = re.compile(r"^gemini-[a-zA-Z0-9.\-]+$")
+PROJECT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=PROJECT_ENV_FILE, extra="ignore")
 
     app_env: str = "development"
-    database_url: str = "postgresql+psycopg://firescope:firescope_local@localhost:5432/firescope"
+    database_url: str
     cors_origins: list[str] = [
         "http://localhost:5173", "http://localhost:8080",
         "http://127.0.0.1:5173", "http://127.0.0.1:8080",

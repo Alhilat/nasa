@@ -22,7 +22,7 @@ def run_job(factory, kind: str, version: str, parameters: dict, operation: Calla
             job.finished_at = datetime.now(UTC)
             job.output_metadata = output
         return {"job_id": str(job_id), **output}
-    except Exception as exc:
+    except (Exception, KeyboardInterrupt) as exc:
         with factory.begin() as session:
             job = session.get(ProcessingJob, job_id)
             job.status = "failed"

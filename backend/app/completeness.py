@@ -269,7 +269,8 @@ def extract_source_evidence(sources: list[dict[str, Any]]) -> dict[str, Any]:
                     }
                 )
             continue
-        request = meta.get("request")
+        report_req = (quality.get("request_metadata") or {}).get("request")
+        request = report_req if isinstance(report_req, dict) else meta.get("request")
         if isinstance(request, dict) and request.get("start_date") and request.get("day_range"):
             try:
                 win_start = date.fromisoformat(str(request["start_date"]))
@@ -280,6 +281,7 @@ def extract_source_evidence(sources: list[dict[str, Any]]) -> dict[str, Any]:
             if days <= 0:
                 continue
             win_end = win_start + timedelta(days=days)
+            # Filters restrict a response; they cannot establish different request dates.
             declared_sensor = str(source.get("sensor_code") or "")
             req_source = str(request.get("source") or "")
             sensors = SOURCE_FAMILY_SENSORS.get(declared_sensor, ())

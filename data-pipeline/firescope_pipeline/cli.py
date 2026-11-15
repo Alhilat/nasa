@@ -5,24 +5,28 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pandas as pd
+from app.db import session_factory
+from app.models import (
+    AggregateSource,
+    HarmonizedAggregate,
+    Observation,
+    ObservationRecord,
+    RawRecord,
+)
+from app.schemas import ObservationQuery
 from dotenv import load_dotenv
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, insert, select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.db import session_factory
-from app.models import (
-    AggregateSource, HarmonizedAggregate, Observation, ObservationRecord, RawRecord,
-)
-from app.schemas import ObservationQuery
+from firescope_pipeline.firms_api import API_SOURCES, FIRMSAPIError, FIRMSClient
 from firescope_pipeline.harmonize import ALGORITHM_VERSION as GRID_VERSION
 from firescope_pipeline.harmonize import aggregate_frame, validate_grid
 from firescope_pipeline.ingest import MAX_FILE_BYTES, SOURCE_SENSORS, inspect_csv
-from firescope_pipeline.firms_api import API_SOURCES, FIRMSAPIError, FIRMSClient
-from firescope_pipeline.selection import Selection, JORDAN_BBOX, JORDAN_START, JORDAN_END
+from firescope_pipeline.jobs import run_job
+from firescope_pipeline.selection import JORDAN_BBOX, JORDAN_END, JORDAN_START, Selection
 from firescope_pipeline.service import import_source
 from firescope_pipeline.sync import sync_api
-from firescope_pipeline.jobs import run_job
 
 
 def utc_timestamp(value: str):
@@ -146,7 +150,9 @@ def write_report(path, report):
 
 
 def main():
-    load_dotenv(".env")
+    from app.core.config import PROJECT_ENV_FILE
+
+    load_dotenv(PROJECT_ENV_FILE)
     parser = argparse.ArgumentParser(description="FireScope reproducible NASA FIRMS processing")
     commands = parser.add_subparsers(dest="command", required=True)
     import_parser = commands.add_parser("ingest", help="Archive official historical FIRMS CSVs")
@@ -173,6 +179,24 @@ def main():
     api_parser.add_argument("--max-requests", type=int, default=200)
     api_parser.add_argument("--retries", type=int, default=3)
     add_spatial_arguments(api_parser, historical=False)
+    backfill_parser = commands.add_parser(
+        "backfill", help="Resume official Jordan MODIS/VIIRS history from 2000 through today",
+    )
+    backfill_parser.add_argument("--region", choices=["jordan"], default="jordan")
+    backfill_parser.add_argument("--start", type=date.fromisoformat, default=date(2000, 1, 1))
+    backfill_parser.add_argument(
+        "--through", type=date.fromisoformat,
+        default=datetime.now(UTC).date(), help="Inclusive UTC date",
+    )
+    backfill_parser.add_argument("--output", default="data/backfill/jordan")
+    backfill_parser.add_argument("--window-days", type=int, choices=range(1, 6), default=5)
+    backfill_parser.add_argument("--lookback-days", type=int, default=2)
+    backfill_parser.add_argument("--max-requests", type=int, default=2000)
+    backfill_parser.add_argument("--retries", type=int, default=3)
+    backfill_parser.add_argument(
+        "--plan", action="store_true", help="Report source plan without importing",
+    )
+    backfill_parser.add_argument("--report", help="Write machine-readable progress/result JSON")
     grid_parser = commands.add_parser("aggregate", help="Create sensor/day/grid aggregates")
     grid_parser.add_argument("--start", type=utc_timestamp, required=True)
     grid_parser.add_argument("--end", type=utc_timestamp, required=True)
@@ -202,7 +226,25 @@ def main():
     completeness_parser.add_argument("--report", help="Write deterministic JSON audit report")
     args = parser.parse_args()
     try:
-        if args.command == "harmonize":
+        if args.command == "backfill":
+            from contextlib import nullcontext
+
+            from app.completeness import JORDAN_COUNTRY_GEOJSON
+
+            from firescope_pipeline.backfill import backfill
+
+            key = os.getenv("MAP_KEY", "")
+            context = (FIRMSClient(key, retries=args.retries, max_requests=args.max_requests)
+                       if key else nullcontext(None))
+            with context as client:
+                output = backfill(
+                    session_factory(), client, output=args.output, start=args.start,
+                    through=args.through, as_of=datetime.now(UTC).date(),
+                    polygon=JORDAN_COUNTRY_GEOJSON, window_days=args.window_days,
+                    lookback_days=args.lookback_days, plan_only=args.plan,
+                    progress=lambda message: print(message, flush=True),
+                )
+        elif args.command == "harmonize":
             from firescope_pipeline.calibration.runner import run_study
             output = run_study(args.manifest, args.regions, args.protocol, args.output,
                                exposure_path=args.exposure)
@@ -243,6 +285,10 @@ def main():
                 )
         else:
             output = aggregate(args)
+    except KeyboardInterrupt:
+        parser.exit(
+            130, "Interrupted. Committed imports are retained; rerun the same command to resume.\n",
+        )
     except (ValueError, OSError, FIRMSAPIError) as exc:
         report = getattr(exc, "report", {"status": "failed", "error": str(exc)})
         write_report(getattr(args, "report", None), report)

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_session
+from app.completeness import JORDAN_COUNTRY_GEOJSON
 from app.history import HistoryQuery, analyze, calendar_csv
 from app.models import (
     CalibrationModel,
@@ -17,6 +18,7 @@ from app.models import (
     Observation,
     ObservationRecord,
     RawRecord,
+    ProcessingJob,
     SourceFile,
 )
 from app.repository import observation_filters
@@ -25,6 +27,12 @@ from app.schemas import ObservationQuery
 router = APIRouter(prefix="/api/v1/analytics/history", tags=["historical intelligence"])
 SessionDep = Annotated[Session, Depends(get_session)]
 MAX_RECORDS = 250000
+
+
+@router.get("/jordan-boundary")
+def jordan_boundary():
+    """Return the same boundary used by the archive completeness audit."""
+    return JORDAN_COUNTRY_GEOJSON
 
 
 def _serialize_source_row(row, quality_by_source: dict[str, list[dict]] | None = None) -> dict:
@@ -118,13 +126,19 @@ def load_inputs(
             if str(row._mapping["id"]) not in seen_ids:
                 sources.append(row)
         quality_rows = session.execute(
-            select(DataQualityReport.source_id, DataQualityReport.report)
+            select(DataQualityReport.source_id, DataQualityReport.report, ProcessingJob.parameters)
+            .outerjoin(ProcessingJob, ProcessingJob.id == DataQualityReport.job_id)
             .where(DataQualityReport.source_id.is_not(None))
             .order_by(
                 DataQualityReport.source_id, DataQualityReport.created_at, DataQualityReport.job_id
             )
         ).all()
-        for sid, rep in quality_rows:
+        for sid, rep, parameters in quality_rows:
+            # Recover legacy per-import request context without changing stored reports.
+            if not (rep.get("request_metadata") or {}).get("request"):
+                job_metadata = (parameters or {}).get("request_metadata") or {}
+                if isinstance(job_metadata.get("request"), dict):
+                    rep = {**rep, "request_metadata": job_metadata}
             quality_by_source.setdefault(str(sid), []).append(rep)
 
     records = [

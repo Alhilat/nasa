@@ -18,6 +18,13 @@ flowchart LR
 
 ## Module boundaries
 
+Map drawing uses Terra Draw's MapLibre adapter; the coordinate form and drawing
+completion produce the same discriminated Polygon/MultiPolygon type. Region
+selection is pending until the dashboard applies its query. Backfill separates
+pure interval planning (`backfill_plan.py`) from cache/transport orchestration
+(`backfill.py`) and the existing transactional importer/checkpoint layer. See
+[map drawing](map-drawing.md) and [backfill](backfill.md).
+
 - `backend/app/core/config.py`: environment validation and configuration.
 - `backend/app/models.py`: database mappings; Alembic owns schema changes.
 - `backend/app/schemas.py`: spatial/time query validation.
@@ -62,6 +69,15 @@ All geometry uses longitude/latitude in EPSG:4326; acquisition times are timezon
 This is an operator-run local foundation. Import limit: 50 MiB / 250,000 rows per file. Aggregation limit: 1 million rows per job, in memory. The frontend plots at most 2,000 records and exports only that visible page with truncation metadata. The API returns at most 5,000 rows per observation page; summary statistics use the entire matching query. Large deployments need partitioning, spatial tiles, object storage instead of `bytea`, background execution, query budgets, controlled database roles and authenticated ingestion. See operations before exposing any service.
 
 ## Statistical harmonization extension
+
+`backend/app/harmonized_calendar.py` is a pure retrospective monthly-count
+calendar builder, reusing calibration model fitting, prediction and year-block
+uncertainty functions. It consumes archive counts and verified model metadata;
+it performs no database or network access. `calendar_schemas.py` defines its
+public response; `scripts/generate_calendar_types.py` generates matching frontend
+types, checked by tests. The React `HarmonizedCalendar` component handles the
+series toggle, calendar, uncertainty chart, month context and snapshot CSV export.
+See [the calendar contract](harmonized-calendar.md) for approval and missing-data rules.
 
 `firescope_pipeline/calibration/` separates equal-area cell-day activity, model fitting, blocked validation/uncertainty, input/bundle verification, reproducible source preparation, plotting and orchestration. The default database-backed observation API remains a raw/normalized sensor explorer; calibration estimates do not overwrite detections. Analysis runs can execute without a database, producing immutable-by-convention filesystem bundles in a new output directory.
 

@@ -10,7 +10,7 @@ from firescope_pipeline.service import import_source
 
 
 def sync_api(factory, client, *, source, selection, start, end, resume=False, lookback_days=2,
-             window_days=1):
+             window_days=1, progress=None):
     if (source not in API_SOURCES or start >= end or not 0 <= lookback_days <= 30
             or not 1 <= window_days <= 5):
         raise ValueError("Provide a supported source, start < end, lookback 0–30, window 1–5")
@@ -57,5 +57,7 @@ def sync_api(factory, client, *, source, selection, start, end, resume=False, lo
         )
         results.append(result)
         next_date = following
+        if progress:
+            progress(source, following, result)
     return {"stream_key": stream_key, "next_date": next_date.isoformat(),
             "requests": client.requests, "imports": results}
