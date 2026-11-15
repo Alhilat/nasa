@@ -3,13 +3,13 @@ from functools import lru_cache
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.config import get_settings
+from app.core.config import get_settings, sqlalchemy_database_url
 
 
 @lru_cache
 def get_engine():
     return create_engine(
-        get_settings().database_url,
+        sqlalchemy_database_url(get_settings().database_url),
         pool_pre_ping=True,
         connect_args={"connect_timeout": 5},
     )

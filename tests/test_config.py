@@ -1,5 +1,5 @@
 import pytest
-from app.core.config import PROJECT_ENV_FILE, Settings
+from app.core.config import PROJECT_ENV_FILE, Settings, sqlalchemy_database_url
 from pydantic import ValidationError
 
 
@@ -20,3 +20,8 @@ def test_database_url_is_required_when_not_configured(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with pytest.raises(ValidationError, match="database_url"):
         Settings(_env_file=None)
+
+
+def test_render_postgres_urls_use_the_installed_psycopg_driver():
+    assert sqlalchemy_database_url("postgresql://user:pass@host/db") == "postgresql+psycopg://user:pass@host/db"
+    assert sqlalchemy_database_url("postgres://user:pass@host/db") == "postgresql+psycopg://user:pass@host/db"

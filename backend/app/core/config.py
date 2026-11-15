@@ -11,6 +11,15 @@ GEMINI_MODEL_PATTERN = re.compile(r"^gemini-[a-zA-Z0-9.\-]+$")
 PROJECT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
+def sqlalchemy_database_url(database_url: str) -> str:
+    """Use the psycopg driver for Render and local PostgreSQL URLs."""
+    if database_url.startswith("postgres://"):
+        database_url = "postgresql://" + database_url.removeprefix("postgres://")
+    if database_url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + database_url.removeprefix("postgresql://")
+    return database_url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=PROJECT_ENV_FILE, extra="ignore")
 
