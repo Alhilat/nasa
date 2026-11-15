@@ -59,7 +59,9 @@ it('keeps detections and the selected area through a tile failure and explicit b
 
 it('restores rectangle and polygon drawing, cancel and clear around the existing layers', () => {
   const onRegion = vi.fn(), onClear = vi.fn();
-  render(<RegionMap data={null} region={boundsRegion([34,29,40,34])} loading={false} onSelect={vi.fn()} onRegion={onRegion} onClear={onClear} />);
+  const { container } = render(<RegionMap data={null} region={boundsRegion([34,29,40,34])} loading={false} onSelect={vi.fn()} onRegion={onRegion} onClear={onClear} />);
+  expect(container.querySelector('.map-stage > .map-canvas')).toBeTruthy();
+  expect(container.querySelector('.map-stage .map-tools')).toBeNull();
   const clickPoint = (lng: number, lat: number) => act(() => state.handlers.click({ point: {}, lngLat: { lng, lat } }));
   fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
   clickPoint(35,30); clickPoint(37,32);

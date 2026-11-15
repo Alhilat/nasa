@@ -153,7 +153,6 @@ export default function RegionMap({ data, region, loading, scopeLabel = '', onRe
     } catch { setNotice('Map export failed. The basemap may restrict image export; analytical CSV and JSON exports are available.'); }
   }
   return <div onKeyDown={e => { if (e.key === 'Escape') setDrawing('navigate'); }} className={'region-map' + (error ? ' has-map-problem' : '')}>
-    <div ref={container} className="map-canvas" aria-label="Interactive thermal detection map" />
     <div className="map-tools" aria-label="Region drawing tools">
       <button className={`map-tool ${mode === 'polygon' ? 'active' : ''}`} disabled={!ready} aria-pressed={mode === 'polygon'} onClick={() => setDrawing(mode === 'polygon' ? 'navigate' : 'polygon')}><Pentagon size={15} /> Draw polygon</button>
       <button className={`map-tool ${mode === 'rectangle' ? 'active' : ''}`} disabled={!ready} aria-pressed={mode === 'rectangle'} onClick={() => setDrawing(mode === 'rectangle' ? 'navigate' : 'rectangle')}><SquareDashed size={15} /> Rectangle</button>
@@ -161,11 +160,14 @@ export default function RegionMap({ data, region, loading, scopeLabel = '', onRe
       <button className="map-tool" onClick={() => { setDrawing('navigate'); onClear(); }} aria-label="Clear region"><Trash2 size={15} /></button>
       <button className="map-tool" disabled={!ready} onClick={exportMap} aria-label="Export displayed map as PNG"><Download size={15} /></button>
     </div>
-    {mode !== 'navigate' && <div className="drawing-notice" role="status"><span>{mode === 'polygon' ? `Click vertices · ${pointCount} selected` : 'Click two opposite corners'}</span>{mode === 'polygon' && <button className="button primary" disabled={pointCount < 3} onClick={finish}><Check size={14} /> Finish</button>}<button className="icon-button" aria-label="Cancel drawing" onClick={() => setDrawing('navigate')}><X size={16} /></button></div>}
-    <button className="reset-map icon-button" title="Fit selected area" aria-label="Reset map view" onClick={() => { const map = mapRef.current; if (map) { if (latest.current.region) frameRegion(map, latest.current.region); else map.flyTo({ center: [36.5, 31.5], zoom: 5 }); } }}><Maximize2 size={16} /></button>
-    {error && <div className="map-warning" role="status"><span>{error}</span>{retryBasemap.current && <button type="button" className="button secondary" onClick={() => retryBasemap.current?.()}><RefreshCw size={14} /> Retry basemap</button>}</div>}
-    {!ready && !error && <p className="map-notice" role="status">Loading basemap…</p>}
-    {notice && <p className="map-notice" role="status">{notice}</p>}
-    <div className="map-legend"><span><i className="dot modis" /> MODIS · 1 km</span><span><i className="dot viirs" /> VIIRS · 375 m</span><span>{loading ? 'Loading observations…' : data ? `${data.metadata.returned.toLocaleString()} displayed${data.metadata.has_more ? ' · page capped' : ''}` : 'No observations loaded'}</span></div>
+    <div className="map-stage">
+      <div ref={container} className="map-canvas" aria-label="Interactive thermal detection map" />
+      {mode !== 'navigate' && <div className="drawing-notice" role="status"><span>{mode === 'polygon' ? `Click vertices · ${pointCount} selected` : 'Click two opposite corners'}</span>{mode === 'polygon' && <button className="button primary" disabled={pointCount < 3} onClick={finish}><Check size={14} /> Finish</button>}<button className="icon-button" aria-label="Cancel drawing" onClick={() => setDrawing('navigate')}><X size={16} /></button></div>}
+      <button className="reset-map icon-button" title="Fit selected area" aria-label="Reset map view" onClick={() => { const map = mapRef.current; if (map) { if (latest.current.region) frameRegion(map, latest.current.region); else map.flyTo({ center: [36.5, 31.5], zoom: 5 }); } }}><Maximize2 size={16} /></button>
+      {error && <div className="map-warning" role="status"><span>{error}</span>{retryBasemap.current && <button type="button" className="button secondary" onClick={() => retryBasemap.current?.()}><RefreshCw size={14} /> Retry basemap</button>}</div>}
+      {!ready && !error && <p className="map-notice" role="status">Loading basemap…</p>}
+      {notice && <p className="map-notice" role="status">{notice}</p>}
+      <div className="map-legend"><span><i className="dot modis" /> MODIS · 1 km</span><span><i className="dot viirs" /> VIIRS · 375 m</span><span>{loading ? 'Loading observations…' : data ? `${data.metadata.returned.toLocaleString()} displayed${data.metadata.has_more ? ' · page capped' : ''}` : 'No observations loaded'}</span></div>
+    </div>
   </div>;
 }
