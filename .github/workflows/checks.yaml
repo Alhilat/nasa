@@ -30,6 +30,31 @@ jobs:
       - run: ruff check backend/app data-pipeline/firescope_pipeline tests --select F821,F822,F823
       - run: pytest -q
       - run: alembic -c backend/alembic.ini upgrade head --sql > /tmp/firescope-migration.sql
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: pnpm --dir frontend build
+        env:
+          VITE_API_BASE_URL: /api/v1
+          VITE_MAP_STYLE_URL: ""
+      - run: python scripts/check_release.py --write-metadata
+      - name: Combined production artifact smoke check
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+          APP_ENV=production uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/pirx-smoke.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/v1/health/live > /dev/null; then break; fi
+            sleep 1
+          done
+          python scripts/smoke_release.py http://127.0.0.1:8000 --expect-commit "$GITHUB_SHA" --skip-basemap
   frontend:
     runs-on: ubuntu-latest
     defaults:

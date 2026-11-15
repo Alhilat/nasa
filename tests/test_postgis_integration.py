@@ -35,6 +35,40 @@ from sqlalchemy.orm import sessionmaker
 pytestmark = pytest.mark.integration
 
 
+def test_backend_access_blocks_browser_roles_even_if_grants_reappear(audit_factory):
+    """Use a disposable non-login role inside a rolled-back test transaction."""
+    with audit_factory() as session:
+        schema = session.scalar(text("SELECT current_schema()"))
+        tables = session.execute(text("""SELECT c.relname, c.relrowsecurity
+            FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+            WHERE n.nspname=:schema AND c.relkind='r'"""), {"schema": schema}).all()
+        assert len(tables) == 14
+        assert all(enabled for _, enabled in tables)
+        assert session.scalar(text("SELECT count(*) FROM sensors")) > 0
+        role = "pirx_access_test_" + uuid.uuid4().hex
+        # All role/grant/data changes roll back; no production archive is used.
+        try:
+            session.execute(text(f'CREATE ROLE "{role}" NOLOGIN'))
+            session.execute(text(f'GRANT USAGE ON SCHEMA "{schema}" TO "{role}"'))
+            session.execute(text(f'GRANT ALL ON sensors TO "{role}"'))
+            session.execute(text(f'SET LOCAL ROLE "{role}"'))
+            assert session.scalar(text("SELECT count(*) FROM sensors")) == 0
+            with session.begin_nested():
+                assert session.execute(text(
+                    "UPDATE sensors SET platform='forbidden' RETURNING code"
+                )).all() == []
+                assert session.execute(text("DELETE FROM sensors RETURNING code")).all() == []
+            with pytest.raises(DBAPIError):
+                with session.begin_nested():
+                    session.execute(text("""INSERT INTO sensors VALUES
+                        ('SYNTHETIC_TEST','MODIS','test',1,'test','https://example.invalid')"""))
+            session.execute(text("RESET ROLE"))
+            assert session.scalar(text("SELECT count(*) FROM sensors")) > 0
+            assert session.scalar(text("SELECT count(*) FROM sensors WHERE platform='forbidden'")) == 0
+        finally:
+            session.rollback()
+
+
 @pytest.mark.parametrize("legacy", [False, True])
 def test_empty_deduplicated_windows_recover_legacy_job_requests(audit_factory, monkeypatch, legacy):
     from app.history import HistoryQuery

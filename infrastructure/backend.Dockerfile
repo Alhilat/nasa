@@ -17,8 +17,10 @@ COPY data-pipeline ./data-pipeline
 COPY docs/reports/harmonization ./docs/reports/harmonization
 COPY tests ./tests
 COPY pyproject.toml ./
+COPY scripts/check_release.py ./scripts/check_release.py
 COPY --from=website /workspace/frontend/dist ./frontend/dist
 RUN pip install --no-deps -e ./backend -e ./data-pipeline \
+    && python scripts/check_release.py --write-metadata \
     && useradd --create-home --uid 10001 firescope
 USER firescope
 EXPOSE 8000

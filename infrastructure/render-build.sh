@@ -7,3 +7,5 @@ npm install --global pnpm@11.25.0
 cd frontend
 pnpm install --frozen-lockfile
 VITE_API_BASE_URL=/api/v1 VITE_MAP_STYLE_URL= pnpm build
+cd ..
+python scripts/check_release.py --write-metadata

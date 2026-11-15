@@ -8,6 +8,8 @@ from fastapi import APIRouter, FastAPI, HTTPException, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
 
+from app.release import validate_website
+
 router = APIRouter()
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 PAGE_PATHS = {".", "", "explorer", "history", "sources", "methodology"}
@@ -25,8 +27,10 @@ class WebsiteFiles(StaticFiles):
             raise
 
 
-def mount_website(app: FastAPI, directory: Path = FRONTEND_DIST):
+def mount_website(app: FastAPI, directory: Path = FRONTEND_DIST, *, required: bool = False):
     """Mount last, so the API and documentation retain their own routes."""
+    if required:
+        validate_website(directory)
     if (directory / "index.html").is_file():
         app.mount("/", WebsiteFiles(directory=directory), name="website")
 

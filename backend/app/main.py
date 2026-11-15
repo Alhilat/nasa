@@ -25,6 +25,7 @@ from app.models import (
     RawRecord, Sensor, SourceFile,
 )
 from app.schemas import ObservationQuery
+from app.release import release_info
 from app.web import mount_website, router as web_router
 
 settings = get_settings()
@@ -60,10 +61,15 @@ def liveness():
 def readiness(session: SessionDep):
     session.execute(text("SELECT PostGIS_Version()"))
     revision = session.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    if revision != "0003_calibration":
+    if revision != "0004_backend_access":
         raise HTTPException(503, "Database schema is not current")
     session.execute(select(Sensor.code).limit(1)).first()
     return {"status": "ready", "database": "connected", "schema_revision": revision}
+
+
+@app.get(f"{API}/health/build", tags=["operations"])
+def build_status():
+    return {"api": "ready", **release_info()}
 
 
 @app.get(f"{API}/config", tags=["operations"])
@@ -272,4 +278,4 @@ def aggregates(job_id: UUID, session: SessionDep, limit: int = Query(1000, ge=1,
                      "parameters": job.parameters, "provenance": job.output_metadata}}
 
 
-mount_website(app)
+mount_website(app, required=settings.app_env == "production")

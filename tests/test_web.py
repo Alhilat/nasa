@@ -45,6 +45,18 @@ def test_api_only_mode_when_frontend_not_built(tmp_path):
     assert TestClient(app).get("/").status_code == 404
 
 
+def test_required_frontend_fails_instead_of_deploying_an_api_only_site(tmp_path):
+    with pytest.raises(ValueError, match="Frontend is missing"):
+        mount_website(FastAPI(), tmp_path, required=True)
+
+
+@pytest.mark.parametrize("path", ["/", "/explorer", "/history", "/sources", "/methodology"])
+def test_website_head_requests(website, path):
+    response = website.head(path)
+    assert response.status_code == 200
+    assert response.content == b""
+
+
 def test_tile_proxy_uses_fixed_provider_without_browser_credentials(website, monkeypatch):
     async def get(_client, url):
         assert url == (
