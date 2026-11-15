@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, ArrowRight, CalendarDays, ChevronDown, Database, Info, Layers2, RefreshCw, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { Activity, ArrowDownToLine, ArrowRight, CalendarDays, ChevronDown, Database, Flame, Info, Layers2, RefreshCw, Satellite, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import { api, inclusiveEndDate } from '../api';
-import { archiveDates, boundsRegion, compare, formatCount, historySelection, parseBounds } from '../dashboard';
+import { archiveDates, boundsRegion, compare, detectionCsv, formatCount, historySelection, parseBounds } from '../dashboard';
 import type { Region } from '../dashboard';
 import { useResource } from '../useResource';
+import type { Resource } from '../useResource';
 import { comparisonLabel, comparisonValue, downloadArtifact, formatMissingDataStatus, historyCsv, historyRequest } from '../history';
 import type { HistoryQuery } from '../history';
 import { sensorCodes } from '../types';
@@ -18,6 +19,7 @@ import ObservationInspector from '../components/ObservationInspector';
 import AIIntelligencePanel from '../components/AIIntelligencePanel';
 import DateRangeControl, { displayDate } from '../components/DateRangeControl';
 import SelectionOverview from '../components/SelectionOverview';
+import { visualTheme as theme } from '../visualTheme';
 
 const studyAreas: { id: string; label: string; bounds: [number, number, number, number] }[] = [
   { id: 'jordan', label: 'Jordan study area', bounds: [34, 29, 40, 34] },
@@ -35,26 +37,26 @@ function State({ loading, error, empty = false, children, message = 'No archived
   if (empty) return <div className="resource-state"><Database size={26} /><strong>No data to display</strong><span>{message}</span></div>;
   return <>{children}</>;
 }
-function Panel({ title, subtitle, icon, action, children, id }: { title: string; subtitle: string; icon: ReactNode; action?: ReactNode; children: ReactNode; id?: string }) {
-  return <section className="panel dashboard-panel" id={id}><div className="panel-heading"><div className="panel-title"><span className="section-icon">{icon}</span><div><h2>{title}</h2><p>{subtitle}</p></div></div>{action}</div>{children}</section>;
+function Panel({ title, subtitle, icon, action, children, id, editorial = false }: { title: string; subtitle: string; icon: ReactNode; action?: ReactNode; children: ReactNode; id?: string; editorial?: boolean }) {
+  return <section className={`panel dashboard-panel${editorial ? '' : ' analytics-surface'}`} id={id}><div className="panel-heading"><div className="panel-title"><span className="section-icon">{icon}</span><div><h2>{title}</h2><p>{subtitle}</p></div></div>{action}</div>{children}</section>;
 }
+
+function Metric({ title, value, note, icon, loading }: { title: string; value: number | null | undefined; note: string; icon: ReactNode; loading: boolean }) {
+  return <article className="metric"><div className="metric-label">{title}<span className="metric-icon">{icon}</span></div><strong aria-busy={loading}>{loading ? <span className="skeleton-value" aria-label="Loading" /> : formatCount(value)}</strong><small>{note}</small></article>;
+}
+const validData = <T,>(resource: Resource<T>) => resource.data !== null && !resource.error && !resource.loading;
 
 export default function Dashboard() {
   const [attempt, setAttempt] = useState(0);
   const archive = useResource('archive-date-range', signal => api.summary({ sensors: [], limit: 1 }, signal), attempt);
   const dates = archive.data && archiveDates(archive.data);
-  if (archive.data && dates) return <DashboardView archive={archive.data} dates={dates} />;
-  return <><header className="page-header"><div><h1>Fire activity</h1><p>Filter satellite detections by area, date and sensor.</p></div></header>
-    <section className="panel archive-loading">
-      {archive.loading ? <div className="resource-state" role="status"><div className="loading-orbit" /><strong>Loading available dates…</strong></div>
-        : archive.error ? <div className="resource-state error-state" role="alert"><Info size={24} /><strong>Archive unavailable</strong><span>{archive.error}</span></div>
-          : <div className="resource-state"><Database size={26} /><strong>No observations in the archive</strong><span>No archive data is available yet. Contact your administrator.</span><Link className="text-link" to="/sources">View data sources</Link></div>}
-      {!archive.loading && <button className="button secondary" onClick={() => setAttempt(n => n + 1)}><RefreshCw size={15} /> Refresh</button>}
-    </section></>;
+  if (!archive.loading) return <DashboardView archive={archive.data} dates={dates ?? { first: '2013-01-01', last: '2025-12-31' }} retryArchive={() => setAttempt(n => n + 1)} />;
+  return <><header className="page-header"><div><h1>Historical fire intelligence</h1><p>Explore the signal. Understand the context.</p></div></header>
+    <section className="panel archive-loading"><div className="resource-state" role="status"><div className="loading-orbit" /><strong>Loading available dates…</strong></div></section></>;
 }
 
-function DashboardView({ archive, dates }: { archive: Summary; dates: { first: string; last: string } }) {
-  const availableSensors = sensorCodes.filter(sensor => (archive.by_sensor[sensor] ?? 0) > 0);
+function DashboardView({ archive, dates, retryArchive }: { archive: Summary | null; dates: { first: string; last: string }; retryArchive: () => void }) {
+  const availableSensors = archive?.detection_count ? sensorCodes.filter(sensor => (archive.by_sensor[sensor] ?? 0) > 0) : [...sensorCodes];
   const initialQuery: Query = { start: `${dates.first}T00:00:00Z`, end: inclusiveEndDate(dates.last), bbox: studyAreas[0].bounds, sensors: availableSensors, limit: 2000 };
   const [query, setQuery] = useState<Query>(initialQuery);
   const [historyQuery, setHistoryQuery] = useState<HistoryQuery>(() => historySelection(initialQuery, 95, 5, '[]'));
@@ -68,6 +70,7 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
   const [formError, setFormError] = useState(''), [notice, setNotice] = useState(''), [advanced, setAdvanced] = useState(false);
   const [revision, setRevision] = useState(0), [activeSensor, setActiveSensor] = useState(availableSensors[0]);
   const [selectedMonth, setSelectedMonth] = useState(''), [selected, setSelected] = useState<ObservationProperties | null>(null);
+  const [exporting, setExporting] = useState(false), [exportError, setExportError] = useState('');
   const [mapMode, setMapMode] = useState<'all' | 'month'>('all');
   const [mapMonth, setMapMonth] = useState(dates.first.slice(0, 7));
   const [jobOverride, setJobOverride] = useState(''), [draftJobId, setDraftJobId] = useState('');
@@ -96,18 +99,26 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
   const eligible = rows.filter(r => !['incomplete_period', 'insufficient_history'].includes(r.anomaly_status)).length;
   const trendLabels = useMemo(() => rows.map(r => r.month), [rows]);
   const trendSeries = useMemo(() => [
-    { name: comparisonLabel(rows), values: rows.map(comparisonValue), color: '#f5af4d' },
-    { name: 'Prior-year median', values: rows.map(r => r.historical_median), color: '#78c8c0', dashed: true },
-    { name: 'Upper percentile', values: rows.map(r => r.upper_threshold), color: '#b99df2', dashed: true },
+    { name: comparisonLabel(rows), values: rows.map(comparisonValue), color: theme.orange },
+    { name: 'Prior-year median', values: rows.map(r => r.historical_median), color: theme.reference, dashed: true },
+    { name: 'Upper percentile', values: rows.map(r => r.upper_threshold), color: theme.white, dashed: true },
   ], [rows]);
   const comparisonSensors = useMemo(() => [...new Set(comparison.data?.daily.map(d => d.sensor_code) ?? [])], [comparison.data]);
   const comparisonSeries = useMemo(() => [
-    { name: 'Detections', color: '#e7b967', values: comparisonSensors.map(s => comparison.data!.daily.filter(d => d.sensor_code === s).reduce((n, d) => n + d.raw_count, 0)) },
-    { name: 'Grid counts', color: '#73b4c0', values: comparisonSensors.map(s => comparison.data!.daily.filter(d => d.sensor_code === s).reduce((n, d) => n + d.grid_count, 0)) },
+    { name: 'Detections', color: theme.orange, values: comparisonSensors.map(s => comparison.data!.daily.filter(d => d.sensor_code === s).reduce((n, d) => n + d.raw_count, 0)) },
+    { name: 'Grid counts', color: theme.reference, values: comparisonSensors.map(s => comparison.data!.daily.filter(d => d.sensor_code === s).reduce((n, d) => n + d.grid_count, 0)) },
   ], [comparison.data, comparisonSensors]);
 
   function clearCoverage() {
     if (coverage !== '[]') { setCoverage('[]'); setNotice('Coverage declarations cleared because the selection changed.'); }
+  }
+  function drawn(region: Region) {
+    clearCoverage(); setAreaChoice('geometry'); setDraftRegion(region); setGeometry(JSON.stringify(region)); setBbox('');
+    setNotice('Region selected. Apply filters to update the map and analysis.');
+  }
+  function clearRegion() {
+    clearCoverage(); setAreaChoice('jordan'); setDraftRegion(boundsRegion(studyAreas[0].bounds)); setGeometry(''); setBbox('34, 29, 40, 34');
+    setNotice('Reset to the Jordan study envelope. Apply filters to update results.');
   }
   function chooseArea(value: string) {
     setAreaChoice(value); clearCoverage();
@@ -115,7 +126,7 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
     if (area) { setBbox(area.bounds.join(', ')); setGeometry(''); setDraftRegion(boundsRegion(area.bounds)); }
   }
   function apply(event: FormEvent) {
-    event.preventDefault(); setFormError('');
+    event.preventDefault(); setFormError(''); setExportError('');
     try {
       if (!start || !end || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) throw new Error('Choose an ordered start and end date.');
       if (start < dates.first || end > dates.last) throw new Error('Choose dates within the available archive range.');
@@ -131,6 +142,17 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
       setDraftRegion(polygon ?? (bounds ? boundsRegion(bounds) : null)); setSelected(null); setSelectedMonth(''); setNotice(''); setRevision(n => n + 1);
     } catch (error) { setFormError(error instanceof Error ? error.message : 'Check your filters.'); }
   }
+  async function exportData(kind: 'detections' | 'calendar' | 'json') {
+    setExporting(true); setExportError('');
+    try {
+      if (kind === 'detections') downloadArtifact(await detectionCsv(query), 'firescope-detections.csv', 'text/csv');
+      else if (history.data) {
+        if (kind === 'calendar') downloadArtifact(await historyCsv(history.data), 'firescope-calendar.csv', 'text/csv');
+        else downloadArtifact(JSON.stringify(history.data, null, 2), 'firescope-analysis.json', 'application/json');
+      }
+    } catch (error) { setExportError(error instanceof Error ? error.message : 'Export failed.'); }
+    finally { setExporting(false); }
+  }
   const sensorControl = <label className="inline-select">Analysis sensor<select aria-label="Analysis sensor" value={activeSensor} onChange={e => { setActiveSensor(e.target.value); setSelectedMonth(''); }}>{historyQuery.sensors.map(s => <option key={s}>{s}</option>)}</select></label>;
   function moveMapMonth(offset: number) {
     const date = new Date(`${activeMapMonth}-01T00:00:00Z`);
@@ -140,11 +162,11 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
   }
 
   return <div className="dashboard">
-    <header className="page-header"><div><h1>Fire activity</h1><p>Filter satellite detections by area, date and sensor.</p></div><div className="header-actions"><button className="button secondary" onClick={() => { setSelected(null); setRevision(n => n + 1); }} disabled={busy}><RefreshCw size={15} /> Refresh</button></div></header>
+    <header className="page-header"><div><div className="eyebrow flex items-center gap-2"><Satellite size={14} /> SATELLITE OBSERVATION WORKSPACE</div><h1>Historical fire intelligence<span>.</span></h1><p>Explore the signal. Understand the context.</p></div><div className="header-actions"><button className="button secondary" onClick={() => { setSelected(null); if (archive) setRevision(n => n + 1); else retryArchive(); }} disabled={busy}><RefreshCw size={15} /> Refresh</button><button className="button primary" disabled={!validData(summary) || exporting} onClick={() => exportData('detections')}><ArrowDownToLine size={15} /> {exporting ? 'Exporting…' : 'Export detections CSV'}</button></div></header>
     <form className="panel dashboard-filters" onSubmit={apply} aria-label="Dashboard filters">
       <div className="filter-title"><SlidersHorizontal size={16} /><strong>Observation filters</strong><span className="subtle-tag">UTC</span></div>
       <div className="filter-main-grid">
-        <DateRangeControl first={dates.first} last={dates.last} start={start} end={end} onChange={(first, last) => { setStart(first); setEnd(last); if (first !== start || last !== end) clearCoverage(); }} />
+        <DateRangeControl archiveDatesKnown={!!archive && !!archiveDates(archive)} first={dates.first} last={dates.last} start={start} end={end} onChange={(first, last) => { setStart(first); setEnd(last); if (first !== start || last !== end) clearCoverage(); }} />
         <div className="area-control">
           <label htmlFor="study-area">Area</label>
           <p className="filter-help" id="area-help">Choose a study area or enter coordinates.</p>
@@ -160,11 +182,11 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
       <fieldset className="satellite-picker"><legend>Satellites</legend>
         <div className="satellite-picker-heading"><p className="filter-help">Choose which satellites to include. Pixel size and overpass times differ.</p><button type="button" className="text-link" onClick={() => { setSensors(availableSensors); clearCoverage(); }}>Select all with data</button></div>
         <div className="satellite-options">{sensorCodes.map(s => {
-          const count = archive.by_sensor[s] ?? 0;
-          return <label key={s} className={'satellite-option ' + (sensors.includes(s) ? 'is-selected' : '') + (!count ? ' is-unavailable' : '')}>
-            <input type="checkbox" aria-label={s.replaceAll('_', ' ')} disabled={!count} checked={sensors.includes(s)}
+          const count = archive ? archive.by_sensor[s] ?? 0 : undefined;
+          return <label key={s} className={'satellite-option ' + (sensors.includes(s) ? 'is-selected' : '') + (count === 0 ? ' is-unavailable' : '')}>
+            <input type="checkbox" aria-label={s.replaceAll('_', ' ')} disabled={count === 0} checked={sensors.includes(s)}
               onChange={e => { setSensors(e.target.checked ? [...sensors, s] : sensors.filter(code => code !== s)); clearCoverage(); }} />
-            <span><strong>{satelliteNames[s]}</strong><small>{s.startsWith('MODIS') ? 'MODIS · 1 km pixels' : 'VIIRS · 375 m pixels'}</small><small>{count ? formatCount(count) + ' in archive' : 'No archived data'}</small></span>
+            <span><strong>{satelliteNames[s]}</strong><small>{s.startsWith('MODIS') ? 'MODIS · 1 km pixels' : 'VIIRS · 375 m pixels'}</small><small>{count === undefined ? 'Counts unavailable' : count ? formatCount(count) + ' in archive' : 'No archived data'}</small></span>
           </label>;
         })}</div>
       </fieldset>
@@ -189,21 +211,30 @@ function DashboardView({ archive, dates }: { archive: Summary; dates: { first: s
       </div>}
       {formError && <p className="form-error" role="alert">{formError}</p>}{notice && <p className="form-notice" role="status">{notice}</p>}
     </form>
+    {(!archive || !archiveDates(archive)) && <p className="form-notice" role="status">Archive date range unavailable. Filter dates use the original 2013–2025 selection.</p>}
+    {archive?.detection_count === 0 && <div className="connection-notice"><Database size={18} /><div><strong>No observations in the archive</strong><p>No observations match this view. Try broadening your filters or check whether archive data is available.</p></div></div>}
     <div className="workspace-status"><span><i className={`status-dot ${summary.error ? 'offline' : summary.loading ? 'waiting' : ''}`} />{summary.loading ? 'Connecting to archive' : summary.error ? 'Archive unavailable' : 'Archive connected'}</span><span>{query.start?.slice(0, 10)} — {new Date(new Date(query.end!).getTime() - 1).toISOString().slice(0, 10)} · {query.polygon ? 'Selected polygon' : 'Study envelope, not a country boundary'}</span></div>
+    <section className="metrics" aria-label="Activity summary">
+      <Metric title="Archived detections" value={summary.data?.detection_count} note="Selected dates · all selected sensors" icon={<Flame size={18} />} loading={summary.loading} />
+      <Metric title="Common-grid activity" value={comparison.data?.grid_count} note="Stored job · matched full-cell/day scope" icon={<Layers2 size={18} />} loading={comparison.loading} />
+      <Metric title="Original source files" value={summary.data?.source_count} note="All linked source copies retained" icon={<Database size={18} />} loading={summary.loading} />
+      <Metric title="Summed observed FRP · MW" value={summary.data?.frp_sum_mw} note={`${formatCount(summary.data?.frp_known_count)} records with FRP · not fire energy`} icon={<Activity size={18} />} loading={summary.loading} />
+    </section>
+    {exportError && <p className="connection-notice" role="alert">{exportError}</p>}
     <SelectionOverview summary={summary} start={query.start!.slice(0, 10)} end={new Date(new Date(query.end!).getTime() - 1).toISOString().slice(0, 10)} />
     {summary.error && <div className="connection-notice" role="alert"><Info size={18} /><div><strong>Archive unavailable</strong><p>{summary.error} Try refreshing the data.</p></div></div>}
     <div className="dashboard-map-grid"><Panel id="observation-map" title="Map of recorded heat" subtitle="Select a point to see its date and source" icon={<Layers2 size={18} />}>
       <div className="map-period-controls"><label>Map period<select aria-label="Map period" value={mapMode} onChange={e => { setMapMode(e.target.value as 'all' | 'month'); setSelected(null); }}><option value="all">Entire selected period</option><option value="month">Month by month</option></select></label>{mapMode === 'month' && <div className="map-month-controls"><button type="button" className="button secondary" disabled={activeMapMonth <= firstMonth} onClick={() => moveMapMonth(-1)}>Previous month</button><label>Month<input type="month" aria-label="Map month" min={firstMonth} max={lastMonth} value={activeMapMonth} onChange={e => { if (e.target.value >= firstMonth && e.target.value <= lastMonth) { setMapMonth(e.target.value); setSelected(null); } }} /></label><button type="button" className="button secondary" disabled={activeMapMonth >= lastMonth} onClick={() => moveMapMonth(1)}>Next month</button></div>}<p>{mapMode === 'month' ? 'The map shows this month within your selected date range. Other charts and totals still cover the full selection.' : 'The map shows the entire selected date range.'}</p></div>
-      <div className="map-wrap"><RegionMap data={mapObservations.data} region={draftRegion} loading={mapObservations.loading} onSelect={setSelected} />{selected && <ObservationInspector observation={selected} close={() => setSelected(null)} />}</div>{mapObservations.error && <p className="panel-message" role="alert">{mapObservations.error}</p>}<div className="map-footer"><span>Map: {formatCount(mapObservations.data?.metadata.returned)} observations{mapObservations.data?.metadata.has_more ? ' · map display is limited to 2,000' : ''}</span><span>Select a detection to view its source</span></div></Panel>
-      <aside className="panel context-panel"><h2>Detections by sensor</h2><p>Counts cover the entire selected date range. Sensor resolution and overpass times affect detection counts.</p><div className="sensor-totals">{query.sensors.map(s => <div key={s}><span><i className={`dot ${s.startsWith('MODIS') ? 'modis' : 'viirs'}`} />{s.replaceAll('_', ' ')}</span><strong>{summary.data ? formatCount(summary.data.by_sensor[s] ?? 0) : '—'}</strong></div>)}</div><div className="context-warning"><ShieldCheck size={17} /><span>Counts represent satellite detections, not unique fires.</span></div><Link className="text-link" to="/methodology">View methods <ArrowRight size={14} /></Link></aside></div>
+      <div className="map-wrap"><RegionMap data={mapObservations.data} region={draftRegion} loading={mapObservations.loading} onSelect={setSelected} onRegion={drawn} onClear={clearRegion} scopeLabel={`${query.start} — ${query.end} (exclusive end) · ${mapMode === 'month' ? activeMapMonth : 'entire selected period'} · ${JSON.stringify({ bbox: query.bbox, polygon: query.polygon, sensors: query.sensors, confidence: query.confidence })}`} />{selected && <ObservationInspector observation={selected} close={() => setSelected(null)} />}</div>{mapObservations.error && <p className="panel-message" role="alert">{mapObservations.error}</p>}<div className="map-footer"><span>Map: {formatCount(mapObservations.data?.metadata.returned)} observations{mapObservations.data?.metadata.has_more ? ' · map display is limited to 2,000' : ''}</span><span>Select a detection to view its source</span></div></Panel>
+      <aside className="panel context-panel"><div className="eyebrow">READ THE SIGNAL</div><h2>Observations.<br />With their context.</h2><p>MODIS and VIIRS see the same landscape at different resolutions and overpass times.</p><h3>Detections by sensor</h3><p>Counts cover the entire selected date range. Sensor resolution and overpass times affect detection counts.</p><div className="sensor-totals">{query.sensors.map(s => <div key={s}><span><i className={`dot ${s.startsWith('MODIS') ? 'modis' : 'viirs'}`} />{s.replaceAll('_', ' ')}</span><strong>{summary.data ? formatCount(summary.data.by_sensor[s] ?? 0) : '—'}</strong></div>)}</div><div className="context-warning"><ShieldCheck size={17} /><span>Counts represent satellite detections, not unique fires. Operational sensor calibration and risk forecasting are not enabled.</span></div><Link className="text-link" to="/methodology">View methods <ArrowRight size={14} /></Link></aside></div>
     <div className="section-divider"><div><h2>Historical analysis</h2><p>Full-year context: {historyQuery.start_year}–{historyQuery.end_year} · same area and confidence selection. Each sensor is assessed separately.</p></div>{sensorControl}<Link className="text-link" to="/history" state={{ historyQuery }}>Open detailed history <ArrowRight size={14} /></Link></div>
     <Panel title="Daily detections" subtitle="Daily counts by sensor for the selected dates and area" icon={<Activity size={18} />}><State {...summary}><ActivityChart summary={summary.data} /><p className="chart-footnote">Missing days are omitted; gaps do not mean zero fire activity.</p>{!!summary.data?.daily.length && <details className="chart-table"><summary>View daily counts as a table</summary><table><thead><tr><th>Date (UTC)</th><th>Sensor</th><th>Detections</th></tr></thead><tbody>{summary.data.daily.map(row => <tr key={`${row.day}-${row.sensor_code}`}><td>{row.day}</td><td>{row.sensor_code}</td><td>{row.count}</td></tr>)}</tbody></table></details>}</State></Panel>
-    <div className="dashboard-analysis-grid"><Panel title="Monthly detections" subtitle={`${activeSensor} · year-by-month archived detections`} icon={<CalendarDays size={18} />}><State {...history} empty={!history.data?.monthly.some(r => r.count !== null)}><BurningCalendar rows={history.data?.monthly ?? []} sensor={activeSensor} selected={inspectedMonth?.month ?? ''} onSelect={setSelectedMonth} /></State></Panel>
+    <div className="dashboard-analysis-grid"><Panel title="Burning activity calendar" subtitle={`${activeSensor} · year-by-month archived detections`} icon={<CalendarDays size={18} />} action={<button className="icon-button" aria-label="Export monthly calendar CSV" disabled={!validData(history) || exporting} onClick={() => exportData('calendar')}><ArrowDownToLine size={16} /></button>}><State {...history} empty={!history.data?.monthly.some(r => r.count !== null)}><BurningCalendar rows={history.data?.monthly ?? []} sensor={activeSensor} selected={inspectedMonth?.month ?? ''} onSelect={setSelectedMonth} /></State></Panel>
       <Panel title="Unusual activity" subtitle="Monthly counts compared with earlier years" icon={<Activity size={18} />} action={!!rows.length && <label className="inline-select">Comparison month<select aria-label="Comparison month" value={inspectedMonth?.month ?? ''} onChange={e => setSelectedMonth(e.target.value)}>{rows.map(r => <option key={r.month} value={r.month}>{r.month}</option>)}</select></label>}><State {...history} empty={!rows.length}>{inspectedMonth && <div className="anomaly-content"><div className="anomaly-heading"><span className="eyebrow">{inspectedMonth.month} · {activeSensor}</span><span className={`assessment ${inspectedMonth.anomaly_status}`}>{inspectedMonth.anomaly_status.replaceAll('_', ' ')}</span></div><dl className="anomaly-metrics"><div><dt>Archived detections</dt><dd>{formatCount(inspectedMonth.count)}</dd></div>{inspectedMonth.comparison_series === 'validated_harmonized' && <div><dt>Harmonized comparison value</dt><dd>{formatCount(comparisonValue(inspectedMonth))}<small>{inspectedMonth.comparison_units}</small></dd></div>}<div><dt>Historical median</dt><dd>{formatCount(inspectedMonth.historical_median)}</dd></div><div><dt>Lower / upper threshold</dt><dd>{formatCount(inspectedMonth.lower_threshold)} / {formatCount(inspectedMonth.upper_threshold)}</dd></div><div><dt>Baseline period</dt><dd>{inspectedMonth.baseline_period ?? inspectedMonth.baseline_window ?? `${historyQuery.baseline_start_year}–${historyQuery.baseline_end_year}`}</dd></div><div><dt>Prior reference years</dt><dd>{inspectedMonth.baseline_size} (min {inspectedMonth.min_baseline_years ?? historyQuery.min_baseline_years})</dd></div><div><dt>Missing-data status</dt><dd>{formatMissingDataStatus(inspectedMonth.missing_data_status, inspectedMonth.completeness)}</dd></div><div><dt>Observation coverage</dt><dd>{inspectedMonth.observation_coverage ?? 'unknown'}</dd></div><div><dt>Comparison series</dt><dd>{inspectedMonth.comparison_series === 'validated_harmonized' ? 'Validated harmonized' : 'Native sensor'}</dd></div><div><dt>Robust z-score</dt><dd>{formatCount(inspectedMonth.robust_z)}</dd></div><div><dt>Year-on-year change</dt><dd>{inspectedMonth.year_over_year.percent_change === null ? 'Unavailable' : `${formatCount(inspectedMonth.year_over_year.percent_change)}%`}</dd></div></dl><p className="analysis-explanation">{inspectedMonth.anomaly_status === 'incomplete_period' ? 'Assessment withheld: month completeness is unknown. Add audited declarations in Analysis settings.' : inspectedMonth.anomaly_status === 'insufficient_history' ? `Assessment withheld: fewer than ${historyQuery.min_baseline_years} complete earlier instances of this calendar month.` : 'Compared with complete earlier instances of the same calendar month, sensor and area. Percentile flags are descriptive, not probabilities.'}</p>{inspectedMonth.missing_data_reason && <p className="chart-footnote">{inspectedMonth.missing_data_reason}</p>}{(inspectedMonth.limitations?.length || history.data?.limitations?.length) ? <details className="history-details"><summary>Comparison limitations and harmonization status</summary><ul>{(inspectedMonth.limitations ?? history.data?.limitations ?? []).map(item => <li key={item}>{item}</li>)}</ul></details> : null}<div className="assessment-summary"><strong>{flagged.length}</strong> flagged / {eligible} assessed months <small>Full historical context · selected sensor</small>{history.data && <span className="header-actions"><button type="button" className="button secondary" onClick={async () => { try { downloadArtifact(await historyCsv(history.data!), 'pirx-history.csv', 'text/csv'); } catch (e) { setFormError(e instanceof Error ? e.message : 'Export failed.'); } }}>Export CSV</button><button type="button" className="button secondary" onClick={() => downloadArtifact(JSON.stringify(history.data, null, 2), 'pirx-history-analysis.json', 'application/json')}>Export JSON</button></span>}</div></div>}</State></Panel></div>
-    <div className="dashboard-chart-grid"><Panel title="Monthly trend" subtitle={`${activeSensor} · monthly observations and earlier-year reference`} icon={<Activity size={18} />}><State {...history} empty={!rows.some(r => r.count !== null)}><ScientificChart title={`${activeSensor} historical activity trend`} labels={trendLabels} series={trendSeries} metadata={{ analysis_id: history.data?.analysis_id, query: history.data?.query, sources: history.data?.sources }} /><p className="chart-footnote">Gaps remain unknown. Positive counts may be incomplete. Reference thresholds require audited complete months.</p></State></Panel>
-      <Panel title="Detections and grid counts" subtitle="Saved grid counts; sensor bias is uncorrected" icon={<Layers2 size={18} />}><State loading={jobs.loading || comparison.loading} error={jobs.error || comparison.error} empty={!comparison.data?.daily.length} message={jobId ? 'The saved job has no full days and grid cells within this selection.' : 'No saved grid counts are available. Choose a processing job in Analysis settings or create one with the data pipeline.'}><ScientificChart title="Matched raw and common-grid counts by sensor" kind="bar" labels={comparisonSensors} series={comparisonSeries} metadata={comparison.data} />{comparison.data && <div className="comparison-context"><p>{comparison.data.scope}</p><p>{comparison.data.method}</p>{comparison.data.archive_counts_match === false && <p className="form-error">Counts differ from the saved snapshot. Inspect job provenance before interpreting changes.</p>}<details><summary>Processing details</summary><pre>{JSON.stringify({ job_id: comparison.data.job_id, algorithm_version: comparison.data.algorithm_version, parameters: comparison.data.parameters, provenance: comparison.data.provenance }, null, 2)}</pre></details></div>}</State></Panel></div>
-    <Panel title="Sources and limitations" subtitle="Source files and assumptions used in the historical analysis" icon={<ShieldCheck size={18} />}><State {...history} empty={!history.data?.sources.length} message="No source files are associated with the full-year historical selection."><div className="provenance-intro"><p>Full-year historical context · <strong>{history.data?.sources.length} source files</strong>. Source checksums identify archived content. They do not establish authenticity or complete observation coverage.</p><Link className="text-link" to="/sources">View all source files <ArrowRight size={14} /></Link></div><div className="table-scroll provenance-table"><table><thead><tr><th>Original file</th><th>Sensor / product</th><th>Source SHA-256</th><th>Retrieved (UTC)</th></tr></thead><tbody>{history.data?.sources.slice(0, 5).map(s => <tr key={s.id}><td><span>{s.original_filename ?? s.id}</span></td><td>{s.sensor_code ?? 'See source'}<small>{s.product_version} · {s.processing_level}</small></td><td><code title={s.sha256}>{s.sha256.slice(0, 16)}…</code></td><td>{s.retrieved_at ?? 'Not recorded'}</td></tr>)}</tbody></table></div>{(history.data?.sources.length ?? 0) > 5 && <p className="chart-footnote">Showing five files. View all source files for more detail.</p>}<div className="uncertainty-grid"><div><h3>Observation uncertainty</h3><p>Native confidence is not a cross-sensor probability. Cloud cover, overpass timing, product revisions and sensor sensitivity affect detections. Select a map observation for its exact uncertainty metadata.</p></div><div><h3>Historical reference</h3><p>{history.data?.metric_explanations.baseline}</p></div><div><h3>Coverage & interpretation</h3><p>{history.data?.metric_explanations.coverage}</p></div></div><details className="history-details"><summary>Metric definitions and analysis ID</summary><p className="hash">{history.data?.analysis_id}</p>{Object.entries(history.data?.metric_explanations ?? {}).map(([name, description]) => <p key={name}><strong>{name.replaceAll('_', ' ')}:</strong> {description}</p>)}</details></State></Panel>
+    <div className="dashboard-chart-grid"><Panel title="Historical activity trend" subtitle={`${activeSensor} · monthly observations and earlier-year reference`} icon={<Activity size={18} />}><State {...history} empty={!rows.some(r => r.count !== null)}><ScientificChart title={`${activeSensor} historical activity trend`} labels={trendLabels} series={trendSeries} metadata={{ analysis_id: history.data?.analysis_id, query: history.data?.query, sources: history.data?.sources }} /><p className="chart-footnote">Gaps remain unknown. Positive counts may be incomplete. Reference thresholds require audited complete months.</p></State></Panel>
+      <Panel title="Raw vs harmonized" subtitle="Saved grid counts; sensor bias is uncorrected" icon={<Layers2 size={18} />} action={<span className="subtle-tag">BIAS UNCORRECTED</span>}><State loading={jobs.loading || comparison.loading} error={jobs.error || comparison.error} empty={!comparison.data?.daily.length} message={jobId ? 'The saved job has no full days and grid cells within this selection.' : 'No saved grid counts are available. Choose a processing job in Analysis settings or create one with the data pipeline.'}><ScientificChart title="Matched raw and common-grid counts by sensor" kind="bar" labels={comparisonSensors} series={comparisonSeries} metadata={comparison.data} />{comparison.data && <div className="comparison-context"><p>{comparison.data.scope}</p><p>{comparison.data.method}</p>{comparison.data.archive_counts_match === false && <p className="form-error">Counts differ from the saved snapshot. Inspect job provenance before interpreting changes.</p>}<details><summary>Processing details</summary><pre>{JSON.stringify({ job_id: comparison.data.job_id, algorithm_version: comparison.data.algorithm_version, parameters: comparison.data.parameters, provenance: comparison.data.provenance }, null, 2)}</pre></details></div>}</State></Panel></div>
+    <Panel editorial title="Data provenance & uncertainty" subtitle="Source files and assumptions used in the historical analysis" icon={<ShieldCheck size={18} />} action={<button className="button secondary" disabled={!validData(history) || exporting} onClick={() => exportData('json')}><ArrowDownToLine size={14} /> Analysis JSON</button>}><State {...history} empty={!history.data?.sources.length} message="No source files are associated with the full-year historical selection."><div className="provenance-intro"><p>Full-year historical context · <strong>{history.data?.sources.length} source files</strong>. Source checksums identify archived content. They do not establish authenticity or complete observation coverage.</p><Link className="text-link" to="/sources">View all source files <ArrowRight size={14} /></Link></div><div className="table-scroll provenance-table"><table><thead><tr><th>Original file</th><th>Sensor / product</th><th>Source SHA-256</th><th>Retrieved (UTC)</th></tr></thead><tbody>{history.data?.sources.slice(0, 5).map(s => <tr key={s.id}><td><span>{s.original_filename ?? s.id}</span></td><td>{s.sensor_code ?? 'See source'}<small>{s.product_version} · {s.processing_level}</small></td><td><code title={s.sha256}>{s.sha256.slice(0, 16)}…</code></td><td>{s.retrieved_at ?? 'Not recorded'}</td></tr>)}</tbody></table></div>{(history.data?.sources.length ?? 0) > 5 && <p className="chart-footnote">Showing five files. View all source files for more detail.</p>}<div className="uncertainty-grid"><div><h3>Observation uncertainty</h3><p>Native confidence is not a cross-sensor probability. Cloud cover, overpass timing, product revisions and sensor sensitivity affect detections. Select a map observation for its exact uncertainty metadata.</p></div><div><h3>Historical reference</h3><p>{history.data?.metric_explanations.baseline}</p></div><div><h3>Coverage & interpretation</h3><p>{history.data?.metric_explanations.coverage}</p></div></div><details className="history-details"><summary>Metric definitions and analysis ID</summary><p className="hash">{history.data?.analysis_id}</p>{Object.entries(history.data?.metric_explanations ?? {}).map(([name, description]) => <p key={name}><strong>{name.replaceAll('_', ' ')}:</strong> {description}</p>)}</details></State></Panel>
     <AIIntelligencePanel context={historyQuery} dateWindow={{ start_date: query.start!.slice(0, 10), end_date: new Date(new Date(query.end!).getTime() - 1).toISOString().slice(0, 10) }} />
-    <div className="science-note"><Info size={16} /><p>Thermal detections are not unique fires, burned area or forecasts. The calendar and historical charts use complete-year context; map totals respect the exact date filters. Common-grid comparisons use their disclosed matched scope.</p></div>
+    <div className="science-note"><Info size={16} /><p>Thermal detections are not unique fires, burned area or forecasts. The calendar and historical charts use complete-year context; map totals and detection CSV respect the exact date filters. Common-grid comparisons use their disclosed matched scope.</p></div>
   </div>;
 }

@@ -1,4 +1,5 @@
 import type { StyleSpecification } from 'maplibre-gl';
+import { visualTheme as theme } from './visualTheme';
 
 export function mapStyle(customStyle = import.meta.env.VITE_MAP_STYLE_URL): string | StyleSpecification {
   if (customStyle?.trim()) return customStyle.trim();
@@ -23,6 +24,7 @@ export function mapStyle(customStyle = import.meta.env.VITE_MAP_STYLE_URL): stri
       },
     },
     layers: [
+      { id: 'background', type: 'background', paint: { 'background-color': theme.navy } },
       { id: 'esri-imagery', type: 'raster', source: 'esri-imagery' },
       { id: 'esri-reference', type: 'raster', source: 'esri-reference' },
     ],

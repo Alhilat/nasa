@@ -13,7 +13,9 @@ it('explains a detection and keeps source identifiers in a collapsed section', a
   expect(screen.getByText('31.2000° N, 35.5000° E')).toBeTruthy();
   expect(screen.getByText('VIIRS on Suomi NPP')).toBeTruthy();
   expect(screen.getByText('Nominal (standard)')).toBeTruthy();
-  expect(screen.getByText(/1.93 megawatts/)).toBeTruthy();
+  expect(screen.getByText(`${(1.93).toLocaleString()} megawatts`)).toBeTruthy();
+  expect(screen.getByText('Sensor code')).toBeTruthy();
+  expect(screen.getByText('2013-11-28T10:42:00.000Z')).toBeTruthy();
   expect(screen.getByText('Source and technical details').closest('details')?.open).toBe(false);
   expect(await screen.findByText('Open original data source ↗')).toBeTruthy();
 });
@@ -35,8 +37,8 @@ it('checks archive evidence only on request and reports nearby detections', asyn
   expect(api.detectionContext).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Check this detection' }));
   expect(await screen.findByText('Other detections found nearby')).toBeTruthy();
-  expect(screen.getByText('3 other detections')).toBeTruthy();
-  expect(screen.getByText('8 other detections')).toBeTruthy();
+  expect(screen.getByText(`${(3).toLocaleString()} other detections`)).toBeTruthy();
+  expect(screen.getByText(`${(8).toLocaleString()} other detections`)).toBeTruthy();
   expect(screen.getByText(/Coverage is unknown/)).toBeTruthy();
   expect(screen.getByText(/land cover, independent fire reports/)).toBeTruthy();
 });

@@ -19,6 +19,7 @@ export default function History() {
   const [grid, setGrid] = useState(selected?.grid_size_deg ?? 1), [coverage, setCoverage] = useState(JSON.stringify(selected?.complete_months ?? []));
   const [result, setResult] = useState<HistoryResult | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
@@ -44,6 +45,14 @@ export default function History() {
     finally { if (!current.signal.aborted) setBusy(false); }
   }
 
+  async function exportCsv() {
+    if (!result) return;
+    setExporting(true); setError('');
+    try { downloadArtifact(await historyCsv(result), 'firescope-history.csv', 'text/csv'); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Export failed.'); }
+    finally { setExporting(false); }
+  }
+
   const selectedSensor = result?.query.sensors[0] ?? sensor;
   const rows = result?.monthly.filter(r => r.sensor_code === selectedSensor) ?? result?.monthly ?? [];
   const inspected = rows.find(r => r.month === selectedMonth)
@@ -52,7 +61,7 @@ export default function History() {
     ?? rows.at(-1);
 
   return <>
-    <header className="page-header"><div><h1>Historical analysis</h1><p>Compare monthly and yearly detections for one sensor and area.</p></div></header>
+    <header className="page-header"><div><div className="eyebrow">HISTORICAL INTELLIGENCE</div><h1>Burning activity through time<span>.</span></h1><p>Compare equivalent months and a fixed area, with sensor context intact.</p></div></header>
     <section className="panel prose-panel"><h2>Analysis filters</h2>
       <form className="history-form" onSubmit={run}>
         <label>Sensor<select value={sensor} onChange={e => setSensor(e.target.value)}>{sensorCodes.map(s => <option key={s}>{s}</option>)}</select></label>
@@ -78,11 +87,11 @@ export default function History() {
       <div className="history-actions">
         <span>{result.sources.length} source files · {result.algorithm_version} · Baseline {result.baseline_period ?? `${result.query.baseline_start_year}–${result.query.baseline_end_year}`}</span>
         <div className="header-actions">
-          <button type="button" className="button secondary" onClick={async () => { try { downloadArtifact(await historyCsv(result), 'pirx-history.csv', 'text/csv'); } catch (e) { setError(e instanceof Error ? e.message : 'CSV export failed.'); } }}>Export CSV</button>
-          <button type="button" className="button secondary" onClick={() => downloadArtifact(JSON.stringify(result, null, 2), 'pirx-history-analysis.json', 'application/json')}>Export JSON</button>
+          <button type="button" className="button secondary" disabled={exporting} onClick={exportCsv}>{exporting ? 'Exporting…' : 'Export monthly CSV'}</button>
+          <button type="button" className="button secondary" onClick={() => downloadArtifact(JSON.stringify(result, null, 2), 'pirx-history-analysis.json', 'application/json')}>Export full analysis JSON</button>
         </div>
       </div>
-      {inspected && <section className="panel history-panel">
+      {inspected && <section className="panel history-panel analytics-surface">
         <div className="panel-heading">
           <div><h2>Selected month comparison · {inspected.month}</h2><p>Compare the selected month against its historical median and review baseline, missing-data status, and limitations.</p></div>
           <label className="inline-select">Selected comparison month<select aria-label="Selected comparison month" value={inspected.month} onChange={e => setSelectedMonth(e.target.value)}>{rows.map(r => <option key={r.month} value={r.month}>{r.month}</option>)}</select></label>
@@ -109,11 +118,11 @@ export default function History() {
           ) : null}
         </div>
       </section>}
-      <section className="panel history-panel"><div className="panel-heading"><div><h2>Historical trend · {selectedSensor}</h2><p>{comparisonLabel(rows)} for the selected sensor.</p></div></div><HistoryTrend result={result} sensor={selectedSensor} /><p className="chart-footnote">Unknown months break the line. Archived counts can be incomplete; thresholds use complete earlier years only.</p></section>
-      <section className="panel history-panel"><div className="panel-heading"><h2>Monthly activity calendar and anomalies</h2></div><div className="table-scroll history-months"><table><thead><tr><th>Month</th><th>Detections</th><th>Completeness</th><th>Missing-data status</th><th>Baseline period</th><th>Prior median</th><th>Reference years</th><th>Lower / upper</th><th>Comparison value / units</th><th>Series</th><th>Anomaly</th><th>Year-on-year %</th></tr></thead><tbody>{result.monthly.map(r => <tr key={r.month} onClick={() => setSelectedMonth(r.month)}><td>{r.month}</td><td>{display(r.count)}</td><td>{r.completeness}</td><td>{formatMissingDataStatus(r.missing_data_status, r.completeness)}</td><td>{r.baseline_period ?? r.baseline_window ?? '—'}</td><td>{display(r.historical_median)}</td><td>{r.baseline_size}</td><td>{display(r.lower_threshold)} / {display(r.upper_threshold)}</td><td>{display(comparisonValue(r))}<small>{r.comparison_units ?? 'detections per month'}</small></td><td>{r.comparison_series === 'validated_harmonized' ? 'Harmonized' : 'Native'}</td><td>{r.anomaly_status.replaceAll('_', ' ')}</td><td>{display(r.year_over_year.percent_change)}</td></tr>)}</tbody></table></div></section>
-      <section className="panel history-panel"><div className="panel-heading"><h2>Yearly activity calendar</h2></div><div className="table-scroll"><table><thead><tr><th>Year</th><th>Complete-year count</th><th>Observed archive total</th><th>Complete months</th><th>Matched months for YoY</th><th>Matched-month change %</th></tr></thead><tbody>{result.yearly.map(r => <tr key={r.year}><td>{r.year}</td><td>{display(r.count)}</td><td>{display(r.observed_count)}</td><td>{r.complete_months.length}/12</td><td>{r.year_over_year.matched_months.join(', ') || 'None'}</td><td>{display(r.year_over_year.percent_change)}</td></tr>)}</tbody></table></div></section>
-      <section className="panel history-panel"><div className="panel-heading"><h2>Seasonal profile · complete baseline months</h2></div><div className="table-scroll"><table><thead><tr><th>Calendar month</th><th>Median detections</th><th>Reference years</th></tr></thead><tbody>{result.seasonal_profiles.map(r => <tr key={r.calendar_month}><td>{r.calendar_month}</td><td>{display(r.median)}</td><td>{r.sample_size}</td></tr>)}</tbody></table></div></section>
-      <section className="panel history-panel"><div className="panel-heading"><div><h2>Spatial hotspot concentration</h2><p>Fixed angular cells · detection shares, without exposure or physical-area correction</p></div></div><div className="table-scroll"><table><thead><tr><th>Sensor</th><th>Occupied cells</th><th>Concentration index (0–1)</th><th>Top 10 cells share</th></tr></thead><tbody>{result.concentration.map(r => <tr key={r.sensor_code}><td>{r.sensor_code}</td><td>{r.occupied_cells}</td><td>{display(r.herfindahl_index)}</td><td>{display(r.top_10_cells_share)}</td></tr>)}</tbody></table></div><details className="history-details"><summary>View occupied grid cells</summary><div className="table-scroll history-months"><table><thead><tr><th>Grid X / Y</th><th>Detections</th><th>Share</th></tr></thead><tbody>{result.spatial.features.map(f => <tr key={`${f.properties.grid_x}-${f.properties.grid_y}`}><td>{f.properties.grid_x} / {f.properties.grid_y}</td><td>{f.properties.count}</td><td>{display(f.properties.share)}</td></tr>)}</tbody></table></div></details></section>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><div><h2>Historical trend · {selectedSensor}</h2><p>{comparisonLabel(rows)} for the selected sensor.</p></div></div><HistoryTrend result={result} sensor={selectedSensor} /><p className="chart-footnote">Unknown months break the line. Archived counts can be incomplete; thresholds use complete earlier years only.</p></section>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><h2>Monthly activity calendar and anomalies</h2></div><div className="table-scroll history-months"><table><thead><tr><th>Month</th><th>Detections</th><th>Completeness</th><th>Missing-data status</th><th>Baseline period</th><th>Prior median</th><th>Reference years</th><th>Lower / upper</th><th>Comparison value / units</th><th>Series</th><th>Anomaly</th><th>Year-on-year %</th></tr></thead><tbody>{result.monthly.map(r => <tr key={r.month} onClick={() => setSelectedMonth(r.month)}><td>{r.month}</td><td>{display(r.count)}</td><td>{r.completeness}</td><td>{formatMissingDataStatus(r.missing_data_status, r.completeness)}</td><td>{r.baseline_period ?? r.baseline_window ?? '—'}</td><td>{display(r.historical_median)}</td><td>{r.baseline_size}</td><td>{display(r.lower_threshold)} / {display(r.upper_threshold)}</td><td>{display(comparisonValue(r))}<small>{r.comparison_units ?? 'detections per month'}</small></td><td>{r.comparison_series === 'validated_harmonized' ? 'Harmonized' : 'Native'}</td><td>{r.anomaly_status.replaceAll('_', ' ')}</td><td>{display(r.year_over_year.percent_change)}</td></tr>)}</tbody></table></div></section>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><h2>Yearly activity calendar</h2></div><div className="table-scroll"><table><thead><tr><th>Year</th><th>Complete-year count</th><th>Observed archive total</th><th>Complete months</th><th>Matched months for YoY</th><th>Matched-month change %</th></tr></thead><tbody>{result.yearly.map(r => <tr key={r.year}><td>{r.year}</td><td>{display(r.count)}</td><td>{display(r.observed_count)}</td><td>{r.complete_months.length}/12</td><td>{r.year_over_year.matched_months.join(', ') || 'None'}</td><td>{display(r.year_over_year.percent_change)}</td></tr>)}</tbody></table></div></section>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><h2>Seasonal profile · complete baseline months</h2></div><div className="table-scroll"><table><thead><tr><th>Calendar month</th><th>Median detections</th><th>Reference years</th></tr></thead><tbody>{result.seasonal_profiles.map(r => <tr key={r.calendar_month}><td>{r.calendar_month}</td><td>{display(r.median)}</td><td>{r.sample_size}</td></tr>)}</tbody></table></div></section>
+      <section className="panel history-panel analytics-surface"><div className="panel-heading"><div><h2>Spatial hotspot concentration</h2><p>Fixed angular cells · detection shares, without exposure or physical-area correction</p></div></div><div className="table-scroll"><table><thead><tr><th>Sensor</th><th>Occupied cells</th><th>Concentration index (0–1)</th><th>Top 10 cells share</th></tr></thead><tbody>{result.concentration.map(r => <tr key={r.sensor_code}><td>{r.sensor_code}</td><td>{r.occupied_cells}</td><td>{display(r.herfindahl_index)}</td><td>{display(r.top_10_cells_share)}</td></tr>)}</tbody></table></div><details className="history-details"><summary>View occupied grid cells</summary><div className="table-scroll history-months"><table><thead><tr><th>Grid X / Y</th><th>Detections</th><th>Share</th></tr></thead><tbody>{result.spatial.features.map(f => <tr key={`${f.properties.grid_x}-${f.properties.grid_y}`}><td>{f.properties.grid_x} / {f.properties.grid_y}</td><td>{f.properties.count}</td><td>{display(f.properties.share)}</td></tr>)}</tbody></table></div></details></section>
       <section className="panel prose-panel"><h2>How to interpret these metrics</h2>{Object.entries(result.metric_explanations).map(([key, value]) => <div key={key}><h3>{key.replaceAll('_', ' ')}</h3><p>{value}</p></div>)}<p className="hash">Analysis ID: {result.analysis_id}</p></section>
     </>}
   </>;

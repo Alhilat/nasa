@@ -4,7 +4,8 @@ import { mapStyle } from './mapStyle';
 it('uses the two ArcGIS layers with labels above imagery and ArcGIS row/column tile URLs', () => {
   const style = mapStyle('');
   if (typeof style === 'string') throw new Error('Expected the built-in ArcGIS style');
-  expect(style.layers.map(layer => layer.id)).toEqual(['esri-imagery', 'esri-reference']);
+  expect(style.layers.map(layer => layer.id)).toEqual(['background', 'esri-imagery', 'esri-reference']);
+  expect(style.layers[0]).toEqual({ id: 'background', type: 'background', paint: { 'background-color': '#101D35' } });
   const imagery = style.sources['esri-imagery'];
   const reference = style.sources['esri-reference'];
   if (imagery.type !== 'raster' || reference.type !== 'raster') throw new Error('Expected raster tiles');

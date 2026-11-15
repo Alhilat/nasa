@@ -124,7 +124,7 @@ it('shows baseline period, reference years, missing-data status, harmonized seri
   expect(await screen.findByText('Selected month comparison · 2018-07')).toBeTruthy();
   expect(screen.getAllByText('2013–2017').length).toBeGreaterThan(0);
   expect(screen.getByText('5 (min 5)')).toBeTruthy();
-  expect(screen.getByText('Validated harmonized (30)')).toBeTruthy();
+  expect(screen.getByText(`Validated harmonized (${(30).toLocaleString()})`)).toBeTruthy();
   expect(screen.getByText(/Validated quantile_mapping model applied/)).toBeTruthy();
   expect(screen.getByText(/VIIRS_SNPP operational archive began 2012-01-20/)).toBeTruthy();
   fireEvent.change(screen.getByLabelText('Selected comparison month'), { target: { value: '2014-07' } });

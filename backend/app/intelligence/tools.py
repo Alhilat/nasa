@@ -405,7 +405,7 @@ class ToolRegistry:
                             {
                                 "name": sensor,
                                 "values": [r["count"] for r in sensor_rows],
-                                "color": "#f5b556",
+                                "color": "#F47A32",
                             }
                         ],
                     }

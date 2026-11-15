@@ -14,10 +14,11 @@ function mapDouble() {
   return { map: methods as unknown as Map, methods,
     emit(event: string, data: unknown) { handlers[event]?.forEach(handler => handler(data)); } };
 }
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
 
 it('never removes a slow or failing basemap and reloads it only on an explicit retry', () => {
   vi.useFakeTimers();
+  vi.stubEnv('VITE_MAP_STYLE_URL', '');
   const { map, methods, emit } = mapDouble(), problem = vi.fn();
   const monitor = watchBasemap(map, problem);
   emit('error', { sourceId: 'esri-imagery' });

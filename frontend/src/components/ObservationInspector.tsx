@@ -65,7 +65,7 @@ export default function ObservationInspector({ observation, close }: { observati
       </div>}
     </section>
     <details className="inspector-technical"><summary>Source and technical details</summary>
-      <dl><dt>Observation ID</dt><dd>{observation.id}</dd><dt>Original confidence value</dt><dd>{observation.confidence_native || 'Not available'}</dd><dt>Source data row</dt><dd>{observation.source_row}</dd><dt>Source file checksum (SHA-256)</dt><dd className="hash">{observation.source_sha256}</dd></dl>
+      <dl><dt>Observation ID</dt><dd>{observation.id}</dd><dt>Sensor code</dt><dd>{observation.sensor_code}</dd><dt>Acquisition timestamp (UTC)</dt><dd>{Number.isNaN(date.getTime()) ? 'Not available' : date.toISOString()}</dd><dt>Original confidence value</dt><dd>{observation.confidence_native || 'Not available'}</dd><dt>Source data row</dt><dd>{observation.source_row}</dd><dt>Source file checksum (SHA-256)</dt><dd className="hash">{observation.source_sha256}</dd></dl>
       {error && <p role="alert">Source details could not be loaded: {error}</p>}
       {!detail && !error && <p role="status">Loading source details…</p>}
       {detail && <><a href={detail.source_url} target="_blank" rel="noreferrer">Open original data source ↗</a><h4>Original source fields</h4><pre>{JSON.stringify(detail.raw_properties, null, 2)}</pre><h4>Uncertainty metadata</h4><pre>{JSON.stringify(detail.uncertainty, null, 2)}</pre></>}

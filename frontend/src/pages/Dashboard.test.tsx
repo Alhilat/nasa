@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { api } from '../api';
-import { historyRequest } from '../history';
+import { downloadArtifact, historyCsv, historyRequest } from '../history';
+import { detectionCsv } from '../dashboard';
 import type { HistoryResult } from '../history';
 vi.mock('../components/AIIntelligencePanel', () => ({ default: () => <div>AI scientific intelligence</div> }));
 
@@ -13,7 +14,8 @@ vi.mock('../components/ActivityChart', () => ({ default: () => <div>Daily activi
 vi.mock('../api', async original => ({ ...await original<typeof import('../api')>(), api: {
   observations: vi.fn(), summary: vi.fn(), jobs: vi.fn(), detail: vi.fn(),
 } }));
-vi.mock('../history', async original => ({ ...await original<typeof import('../history')>(), historyRequest: vi.fn() }));
+vi.mock('../history', async original => ({ ...await original<typeof import('../history')>(), historyRequest: vi.fn(), historyCsv: vi.fn(), downloadArtifact: vi.fn() }));
+vi.mock('../dashboard', async original => ({ ...await original<typeof import('../dashboard')>(), detectionCsv: vi.fn() }));
 
 beforeEach(() => {
   vi.mocked(api.observations).mockResolvedValue({ type: 'FeatureCollection', features: [], metadata: { returned: 0, has_more: false, limit: 2000, offset: 0 } });
@@ -149,7 +151,7 @@ it('keeps the date slider handles ordered and includes a selected single day', a
   await waitFor(() => expect(vi.mocked(api.observations).mock.calls.at(-1)![0]).toMatchObject({ start: '2014-01-01T00:00:00Z', end: '2014-01-02T00:00:00.000Z' }));
 });
 
-it('does not invent a date range for an empty archive', async () => {
+it('keeps the recovered dashboard visible for an empty archive and labels the original filter defaults', async () => {
   vi.mocked(api.summary).mockResolvedValue({
     detection_count: 0, source_count: 0, by_sensor: {}, daily: [],
     first_acquisition: null, last_acquisition: null, frp_known_count: 0,
@@ -157,8 +159,10 @@ it('does not invent a date range for an empty archive', async () => {
   });
   open();
   expect(await screen.findByText('No observations in the archive')).toBeTruthy();
-  expect(screen.queryByLabelText('Start date')).toBeNull();
-  expect(api.observations).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('Start date')).toHaveProperty('value', '2013-01-01');
+  expect(screen.getByText(/Archive date range unavailable/)).toBeTruthy();
+  expect(screen.getByLabelText('Activity summary')).toBeTruthy();
+  expect(screen.getByText('Interactive region map')).toBeTruthy();
 });
 
 it('allows a date field to be edited without breaking the range controls', async () => {
@@ -249,4 +253,36 @@ it('displays selected month comparison against historical median with baseline p
   fireEvent.change(screen.getByLabelText('Comparison month'), { target: { value: '2016-02' } });
   expect(screen.getByText('Partial month archive')).toBeTruthy();
   expect(screen.getByText('Only 10 of 29 UTC days have imported API windows.')).toBeTruthy();
+});
+
+it('renders all restored panels and unknown cards when the archive is disconnected', async () => {
+  vi.mocked(api.summary).mockRejectedValue(new Error('Archive disconnected'));
+  vi.mocked(api.observations).mockRejectedValue(new Error('Archive disconnected'));
+  vi.mocked(historyRequest).mockRejectedValue(new Error('Archive disconnected'));
+  open();
+  await screen.findByText(/Archive date range unavailable/);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(false));
+  const cards = within(screen.getByLabelText('Activity summary'));
+  expect(cards.getAllByText('—')).toHaveLength(4);
+  for (const title of ['Burning activity calendar', 'Raw vs harmonized', 'Data provenance & uncertainty', 'Historical activity trend']) {
+    expect(screen.getByRole('heading', { name: title })).toBeTruthy();
+  }
+  expect(screen.getByText('Interactive region map')).toBeTruthy();
+  expect(screen.getByText('AI scientific intelligence')).toBeTruthy();
+});
+
+it('restores detection CSV, calendar CSV and full analysis JSON actions with the applied selection', async () => {
+  vi.mocked(detectionCsv).mockResolvedValue('synthetic software test CSV');
+  vi.mocked(historyCsv).mockResolvedValue('synthetic calendar test CSV');
+  open();
+  await screen.findByText(/Assessment withheld/);
+  fireEvent.click(screen.getByRole('button', { name: /Export detections CSV/ }));
+  await waitFor(() => expect(downloadArtifact).toHaveBeenCalledWith('synthetic software test CSV', 'firescope-detections.csv', 'text/csv'));
+  expect(vi.mocked(detectionCsv).mock.calls[0][0]).toMatchObject({ bbox: [34,29,40,34], sensors: ['MODIS_TERRA','MODIS_AQUA'] });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Export monthly calendar CSV' }).hasAttribute('disabled')).toBe(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Export monthly calendar CSV' }));
+  await waitFor(() => expect(downloadArtifact).toHaveBeenCalledWith('synthetic calendar test CSV', 'firescope-calendar.csv', 'text/csv'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis JSON' }).hasAttribute('disabled')).toBe(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Analysis JSON' }));
+  await waitFor(() => expect(downloadArtifact).toHaveBeenCalledWith(expect.stringContaining('synthetic-test-only'), 'firescope-analysis.json', 'application/json'));
 });

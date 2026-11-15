@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AIIntelligencePanel from './AIIntelligencePanel';
+import { downloadArtifact } from '../history';
 import { intelligence } from '../intelligence';
 import type { AIReply } from '../intelligence';
 import type { HistoryQuery } from '../history';
@@ -47,14 +48,19 @@ it('clears stale answers and conversation context when the applied map region ch
   await waitFor(() => expect(vi.mocked(intelligence.ask).mock.calls[1][2]).toBeUndefined());
 });
 
-it('generates a report without offering downloads', async () => {
+it('generates a report and restores Markdown and JSON evidence exports', async () => {
   render(<AIIntelligencePanel context={context} />);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' }).hasAttribute('disabled')).toBe(false));
   fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
   await screen.findByText('Synthetic archived count');
   expect(vi.mocked(intelligence.ask).mock.calls[0][3]).toBe(true);
-  expect(screen.queryByRole('button', { name: /report · markdown|evidence · json/i })).toBeNull();
-  expect(intelligence.exportReport).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Report · Markdown' }));
+  await waitFor(() => expect(intelligence.exportReport).toHaveBeenCalledWith(reply, 'markdown'));
+  expect(downloadArtifact).toHaveBeenCalledWith('# Synthetic test report', 'firescope-ai-report.md', 'text/markdown');
+  await waitFor(() => expect(screen.queryByText('Preparing report export…')).toBeNull());
+  fireEvent.click(screen.getByRole('button', { name: 'Evidence · JSON' }));
+  await waitFor(() => expect(intelligence.exportReport).toHaveBeenCalledWith(reply, 'json'));
+  expect(downloadArtifact).toHaveBeenCalledWith('# Synthetic test report', 'firescope-ai-evidence.json', 'application/json');
 });
 
 it('shows provider failure without manufacturing an answer', async () => {

@@ -6,9 +6,10 @@ export const displayDate = (date: string) => new Date(timestamp(date)).toLocaleD
   day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
 });
 
-export default function DateRangeControl({ first, last, start, end, onChange }: {
+export default function DateRangeControl({ first, last, start, end, onChange, archiveDatesKnown = true }: {
   first: string; last: string; start: string; end: string;
   onChange: (start: string, end: string) => void;
+  archiveDatesKnown?: boolean;
 }) {
   const origin = timestamp(first), total = Math.round((timestamp(last) - origin) / day);
   const offset = (date: string) => Math.round((timestamp(date) - origin) / day);
@@ -26,7 +27,7 @@ export default function DateRangeControl({ first, last, start, end, onChange }: 
   ];
   return <fieldset className="date-range-control">
     <legend>Date range</legend>
-    <p className="filter-help">Available data: {displayDate(first)} – {displayDate(last)} · UTC</p>
+    <p className="filter-help">{archiveDatesKnown ? 'Available data' : 'Original filter bounds'} · {displayDate(first)} – {displayDate(last)} · UTC</p>
     <div className="date-presets" aria-label="Date presets">{presets.map((preset, i) => <button
       key={preset.label} type="button" className="filter-chip"
       disabled={i > 0 && preset.start === first}
