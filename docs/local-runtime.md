@@ -42,6 +42,11 @@ the database files persist between runs.
 
 ## Verified archive
 
+The figures below describe the earlier 2013–2025 snapshot. The subsequent
+historical and recent imports, their current scope and limitations are recorded
+in [the Jordan archive audit](jordan-archive.md). The pre-existing aggregate
+jobs and calibration candidates were not recomputed for the expanded archive.
+
 - 26 original NASA FIRMS Jordan CSV files, 2013–2025.
 - 9,225 raw and 9,225 normalized observations: 627 MODIS and 8,598 S-NPP VIIRS.
 - 6,863 daily sensor/grid aggregates using a 0.25-degree angular grid.

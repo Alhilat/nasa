@@ -16,7 +16,7 @@ export type AIReply = {
   interpretation: { executive_summary: Statement[]; interpretations: Statement[]; data_limitations: Statement[]; recommendations: Statement[] } | null;
   evidence: AIEvidence[]; tool_calls: { tool: string; evidence_id: string; status: string }[]; notices: string[];
 };
-export type AIStatus = { configured: boolean; model: string; tools: string[]; regions: Record<string, string>; privacy: string };
+export type AIStatus = { configured: boolean; model: string; fallback_models?: string[]; tools: string[]; regions: Record<string, string>; privacy: string };
 export type DateWindow = { start_date: string; end_date: string };
 export const intelligence = {
   status: (signal: AbortSignal) => request<AIStatus>('/ai/status', signal),

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { historyCsv, historyRequest } from './history';
-import type { HistoryResult, HistoryQuery } from './history';
+import { comparisonLabel, comparisonValue, historyCsv, historyRequest } from './history';
+import type { HistoryMonth, HistoryResult, HistoryQuery } from './history';
 
 afterEach(() => vi.unstubAllGlobals());
 const query = { start_year: 2013, end_year: 2025, bbox: [34, 29, 40, 34] } as HistoryQuery;
@@ -22,4 +22,12 @@ it('refuses CSV from a changed archive rather than exporting mismatched analysis
 it('downloads CSV only for the displayed analysis identity', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, headers: new Headers({ 'X-Analysis-ID': 'same' }), text: async () => 'month,count\n2013-01,\n' }));
   expect(await historyCsv({ query, analysis_id: 'same' } as HistoryResult)).toContain('2013-01,');
+});
+
+it('uses harmonized values consistently and preserves unavailable estimates', () => {
+  const row = { count: 100, comparison_value: 50, comparison_series: 'validated_harmonized' } as HistoryMonth;
+  expect(comparisonValue(row)).toBe(50);
+  expect(comparisonValue({ ...row, comparison_value: null })).toBeNull();
+  expect(comparisonLabel([row])).toContain('reference sensor equivalent');
+  expect(comparisonValue({ ...row, comparison_series: 'native_sensor', comparison_value: undefined })).toBe(100);
 });

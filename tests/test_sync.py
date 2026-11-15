@@ -3,9 +3,8 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
-
-from firescope_pipeline.selection import Selection
 from firescope_pipeline import sync
+from firescope_pipeline.selection import Selection
 
 
 class Factory:
@@ -64,3 +63,21 @@ def test_outside_availability_does_not_download_or_mark_coverage():
         sync.sync_api(Factory(), client, source="MODIS_NRT", selection=Selection(bbox=(0, 0, 1, 1)),
                       start=date(2024, 1, 1), end=date(2025, 1, 4))
     assert not client.days
+
+
+def test_multi_day_windows_advance_checkpoint_and_leave_short_final_window(monkeypatch):
+    client = Client()
+    requests, checkpoints = [], []
+    def area(source, bbox, day, days):
+        requests.append((day, days))
+        return b"test"
+    client.area = area
+    def importer(_factory, _content, **kwargs):
+        checkpoints.append(kwargs["checkpoint"]["next_date"])
+        assert kwargs["metadata"]["request"]["day_range"] == requests[-1][1]
+        return {}
+    monkeypatch.setattr(sync, "import_source", importer)
+    sync.sync_api(Factory(), client, source="MODIS_NRT", selection=Selection(bbox=(0, 0, 1, 1)),
+                  start=date(2025, 1, 1), end=date(2025, 1, 13), window_days=5)
+    assert requests == [(date(2025, 1, 1), 5), (date(2025, 1, 6), 5), (date(2025, 1, 11), 2)]
+    assert checkpoints[-1] == date(2025, 1, 13)

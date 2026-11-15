@@ -200,7 +200,7 @@ class ToolRegistry:
                 records, sources = load_inputs(
                     self.session, query, max_records=50000, selection=selection
                 )
-                result = analyze(query, records, sources)
+                result = analyze(query, records, sources, audit_sources=False)
                 result["monthly"] = [
                     r
                     for r in result["monthly"]

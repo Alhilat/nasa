@@ -73,6 +73,7 @@ def status(agent: AgentDep):
     return {
         "configured": bool(agent.settings.gemini_api_key.get_secret_value()),
         "model": agent.settings.gemini_model,
+        "fallback_models": list(getattr(agent.settings, "gemini_fallback_models", [])),
         "tools": list(TOOL_SPECS),
         "regions": CATALOG,
         "requests_per_minute": agent.settings.ai_requests_per_minute,

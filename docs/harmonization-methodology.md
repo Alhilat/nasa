@@ -104,6 +104,10 @@ Minimum defaults: 24 training pairs across at least three years, eight evaluatio
 
 Support additionally requires improvement in all three held-out scenarios, adequate pairs for each held-out region, estimable stable trends, independently supplied observability and a consistent native-product scope. A passing result would support only the declared metric, products, sensors, strata, grid, regions and periods. The real demonstrated results are not automatically promoted.
 
+The later [seasonal validation review](harmonization-validation-review.md) adds a
+separate seasonal-profile gate. This gate was added after the original studies
+were examined; it was not prospectively specified for those studies.
+
 This is a fixed blocked split, not exhaustive cross-validation or a claim of prior scientific preregistration. Spatial exclusion of shared cells prevents direct coarse-cell leakage but not broader environmental dependence or spatial correlation. Two or three countries do not establish global transferability.
 
 ## 7. Accuracy, trend stability and uncertainty

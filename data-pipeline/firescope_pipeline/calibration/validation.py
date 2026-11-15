@@ -98,6 +98,24 @@ def trend_metrics(frame, prediction, min_months=6):
             "reason": None if results else "insufficient_years_or_common_calendar_months"}
 
 
+def seasonal_metrics(frame, prediction):
+    """Compare centered quarterly profiles within region-years with all four quarters."""
+    work = frame.assign(prediction=np.asarray(prediction),
+                        quarter=(frame.month_number - 1) // 3 + 1)
+    quarterly = work.groupby(["region_id", "year", "quarter"])[[
+        "activity_source", "activity_reference", "prediction",
+    ]].mean().dropna()
+    complete = quarterly.groupby(level=[0, 1]).filter(lambda group: len(group) == 4)
+    if complete.empty or complete.index.get_level_values("year").nunique() < 3:
+        return {"available": False, "reason": "insufficient_complete_seasons_or_years"}
+    centered = complete - complete.groupby(level=[0, 1]).transform("mean")
+    return {"available": True, "region_years": len(complete) // 4,
+            "years": int(complete.index.get_level_values("year").nunique()),
+            "profile_mae": float((centered.prediction - centered.activity_reference).abs().mean()),
+            "baseline_profile_mae": float(
+                (centered.activity_source - centered.activity_reference).abs().mean())}
+
+
 def parameter_intervals(model, train, evaluation, repeats, seed):
     years = sorted(train.year.unique())
     if len(years) < 3 or model["method"] == "baseline":
@@ -170,6 +188,7 @@ def evaluate_candidates(pairs: pd.DataFrame, protocol: ValidationProtocol, conte
                 "metric_intervals_95": metric_intervals(sample, estimate[mask],
                     protocol.bootstrap_repeats, protocol.seed),
                 "trend": trend_metrics(sample, estimate[mask], protocol.min_trend_months),
+                "seasonal_profile": seasonal_metrics(sample, estimate[mask]),
             }
         evaluations[method] = {"status": "evaluated", "splits": splits,
                                "parameter_bootstrap_successes": successful}
@@ -220,6 +239,11 @@ def evaluate_candidates(pairs: pd.DataFrame, protocol: ValidationProtocol, conte
                 reasons.append(split + ":trend_not_estimable")
             elif trend["mean_slope_error"] > trend["mean_baseline_slope_error"] * 1.1 + 1e-12:
                 reasons.append(split + ":trend_error_worsened")
+            season = current["seasonal_profile"]
+            if not season["available"]:
+                reasons.append(split + ":seasonal_profile_not_estimable")
+            elif season["profile_mae"] > season["baseline_profile_mae"] * 1.1 + 1e-12:
+                reasons.append(split + ":seasonal_profile_error_worsened")
     if paired.coverage_mode.iloc[0] != "provided_observability":
         reasons.append("observability_unknown_conditional_detection_comparison_only")
     if metric != "observable_hotspot_cell_day_occupancy":

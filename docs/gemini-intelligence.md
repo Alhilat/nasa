@@ -21,6 +21,7 @@ Set these server variables in the ignored root `.env` or deployment environment:
 ```dotenv
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite,gemini-3.5-flash,gemini-4-hydrogen
 AI_REQUESTS_PER_MINUTE=8
 AI_REQUESTS_PER_DAY=100
 AI_CONCURRENT_REQUESTS=2
@@ -37,7 +38,12 @@ Restart FastAPI after changing configuration:
 The Compose `api` service receives Gemini settings from the environment. No Gemini
 key is provided to the frontend build, database, pipeline or migration service.
 The default model was checked against the supplied project's available model list;
-`GEMINI_MODEL` can select another model supporting function calls and JSON schema.
+`GEMINI_MODEL` can select another model supporting function calls and JSON schema,
+and `GEMINI_FALLBACK_MODELS` defines an ordered comma-separated or JSON list of fallback
+models tried automatically when the primary model fails due to unavailability, quota
+exhaustion, or unusable output (credential/permission `401`/`403` errors still fail
+immediately without fallback). When a fallback model succeeds, the reply `model` field
+reports the model that actually answered and `notices` discloses the fallback.
 No model is downloaded or trained. This feature is distinct from custom forecasting
 or independently evaluated prediction accuracy, neither of which is implemented.
 
@@ -109,7 +115,7 @@ is a detection, not a unique wildfire, burned area, ignition probability, or for
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /api/v1/ai/status` | Public configured flag, model, tool names, curated regions and usage/privacy notes; never a key. Does not require PostGIS. |
+| `GET /api/v1/ai/status` | Public configured flag, model, fallback models, tool names, curated regions and usage/privacy notes; never a key. Does not require PostGIS. |
 | `POST /api/v1/ai/chat` | Tool-grounded conversation turn with validated structured interpretation and Python evidence. |
 | `POST /api/v1/ai/reports` | Same body; first tool selection is constrained to `generate_activity_report`. |
 | `POST /api/v1/ai/reports/export` | Export an existing conversation-owned report as Markdown or JSON. Accepts only conversation ID, report ID and format, not client-generated findings. |

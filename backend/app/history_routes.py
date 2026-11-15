@@ -11,13 +11,36 @@ from sqlalchemy.orm import Session
 
 from app.db import get_session
 from app.history import HistoryQuery, analyze, calendar_csv
-from app.models import Observation, ObservationRecord, RawRecord, SourceFile
+from app.models import (
+    CalibrationModel,
+    DataQualityReport,
+    Observation,
+    ObservationRecord,
+    RawRecord,
+    SourceFile,
+)
 from app.repository import observation_filters
 from app.schemas import ObservationQuery
 
 router = APIRouter(prefix="/api/v1/analytics/history", tags=["historical intelligence"])
 SessionDep = Annotated[Session, Depends(get_session)]
 MAX_RECORDS = 250000
+
+
+def _serialize_source_row(row, quality_by_source: dict[str, list[dict]] | None = None) -> dict:
+    item = {
+        k: (
+            v.astimezone(UTC).isoformat()
+            if hasattr(v, "isoformat")
+            else str(v)
+            if isinstance(v, UUID)
+            else v
+        )
+        for k, v in row._mapping.items()
+    }
+    if quality_by_source and item["id"] in quality_by_source:
+        item["quality_reports"] = quality_by_source[item["id"]]
+    return item
 
 
 def load_inputs(
@@ -64,26 +87,46 @@ def load_inputs(
             links[observation_id].add(str(source_id))
     source_ids = {s for ids in links.values() for s in ids}
     # Never load original_bytes; historical exports include metadata and checksums only.
+    source_cols = (
+        SourceFile.id,
+        SourceFile.sha256,
+        SourceFile.original_filename,
+        SourceFile.source_url,
+        SourceFile.sensor_code,
+        SourceFile.product_version,
+        SourceFile.processing_level,
+        SourceFile.retrieved_at,
+        SourceFile.imported_at,
+        SourceFile.row_count,
+        SourceFile.source_metadata,
+    )
     sources = []
     source_ids = sorted(source_ids)
     for offset in range(0, len(source_ids), 1000):
         sources.extend(
             session.execute(
-                select(
-                    SourceFile.id,
-                    SourceFile.sha256,
-                    SourceFile.original_filename,
-                    SourceFile.source_url,
-                    SourceFile.sensor_code,
-                    SourceFile.product_version,
-                    SourceFile.processing_level,
-                    SourceFile.retrieved_at,
-                    SourceFile.imported_at,
-                    SourceFile.row_count,
-                    SourceFile.source_metadata,
-                ).where(SourceFile.id.in_(source_ids[offset : offset + 1000]))
+                select(*source_cols).where(SourceFile.id.in_(source_ids[offset : offset + 1000]))
             ).all()
         )
+    quality_by_source: dict[str, list[dict]] = {}
+    if isinstance(session, Session) and selection is None:
+        # Also load archive SourceFile rows (e.g. country files or API windows with 0 detections
+        # in a small polygon or month) so archive completeness can be audited reproducibly.
+        seen_ids = {str(r._mapping["id"]) for r in sources}
+        all_archive_sources = session.execute(select(*source_cols).order_by(SourceFile.id)).all()
+        for row in all_archive_sources:
+            if str(row._mapping["id"]) not in seen_ids:
+                sources.append(row)
+        quality_rows = session.execute(
+            select(DataQualityReport.source_id, DataQualityReport.report)
+            .where(DataQualityReport.source_id.is_not(None))
+            .order_by(
+                DataQualityReport.source_id, DataQualityReport.created_at, DataQualityReport.job_id
+            )
+        ).all()
+        for sid, rep in quality_rows:
+            quality_by_source.setdefault(str(sid), []).append(rep)
+
     records = [
         {
             "id": r.id,
@@ -97,24 +140,31 @@ def load_inputs(
         }
         for r in rows
     ]
-    metadata = [
-        {
-            k: (
-                v.astimezone(UTC).isoformat()
-                if hasattr(v, "isoformat")
-                else str(v)
-                if isinstance(v, UUID)
-                else v
-            )
-            for k, v in row._mapping.items()
-        }
-        for row in sources
-    ]
+    metadata = [_serialize_source_row(row, quality_by_source) for row in sources]
     return records, metadata
 
 
+def load_calibration_models(session: Session) -> list[dict]:
+    if not isinstance(session, Session):
+        return []
+    rows = session.execute(
+        select(
+            CalibrationModel.model_version,
+            CalibrationModel.method,
+            CalibrationModel.algorithm_version,
+            CalibrationModel.metric,
+            CalibrationModel.status,
+            CalibrationModel.artifact,
+            CalibrationModel.validation,
+        ).order_by(CalibrationModel.model_version)
+    ).all()
+    return [dict(row._mapping) for row in rows]
+
+
 def load_history(session: Session, query: HistoryQuery, max_records: int | None = None):
-    return analyze(query, *load_inputs(session, query, max_records))
+    records, sources = load_inputs(session, query, max_records)
+    models = load_calibration_models(session)
+    return analyze(query, records, sources, calibration_models=models)
 
 
 @router.post("")

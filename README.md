@@ -70,7 +70,7 @@ The `postgis_data` named volume retains source files, raw rows and job history. 
 
 ## Import real NASA FIRMS observations
 
-See [the ingestion guide](docs/ingestion.md) for Jordan defaults (complete years 2013–2025), polygon/date filters, strict/quarantine policies, quality reports, duplicate handling and resumable MAP_KEY API imports. Real 2013 Jordan CSV validation reports are included in `docs/reports/`; the current public MODIS country file declares version 6.2 and is correctly rejected when expecting 6.1.
+See [the ingestion guide](docs/ingestion.md) and [Jordan archive audit](docs/jordan-archive.md) for the historical import, provenance, coverage limits and resumable updates. The historical profile still defaults to the 2013–2025 calibration interval; override its dates when importing outside that interval. NASA's current annual MODIS files declare version 6.2, not 6.1.
 
 Download a real FIRMS CSV (combined Terra/Aqua MODIS exports are supported with `--sensor MODIS`) from [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/content/active_fire/). For VIIRS, select the matching platform. Use `--product-version native` to require and retain per-row product versions, or an exact expected version to reject mismatches. Put your CSV in `data/` under the repository root (create the folder if needed). Nothing in that folder is committed.
 

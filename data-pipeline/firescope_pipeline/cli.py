@@ -169,6 +169,7 @@ def main():
     api_parser.add_argument("--end", type=date.fromisoformat, required=True, help="Exclusive date")
     api_parser.add_argument("--resume", action="store_true")
     api_parser.add_argument("--lookback-days", type=int, default=2)
+    api_parser.add_argument("--window-days", type=int, choices=range(1, 6), default=1)
     api_parser.add_argument("--max-requests", type=int, default=200)
     api_parser.add_argument("--retries", type=int, default=3)
     add_spatial_arguments(api_parser, historical=False)
@@ -192,6 +193,13 @@ def main():
     levant_parser.add_argument("--end-year", type=int, default=2025)
     register_parser = commands.add_parser("register-calibration", help="Register a verified study bundle in PostGIS")
     register_parser.add_argument("bundle")
+    completeness_parser = commands.add_parser(
+        "audit-completeness",
+        help="Audit and record archive completeness by area, sensor, and month from source evidence",
+    )
+    completeness_parser.add_argument("--start-year", type=int, default=2000)
+    completeness_parser.add_argument("--end-year", type=int, default=2026)
+    completeness_parser.add_argument("--report", help="Write deterministic JSON audit report")
     args = parser.parse_args()
     try:
         if args.command == "harmonize":
@@ -205,6 +213,13 @@ def main():
         elif args.command == "register-calibration":
             from firescope_pipeline.calibration.io import register_bundle
             output = register_bundle(session_factory(), args.bundle)
+        elif args.command == "audit-completeness":
+            from app.completeness import record_completeness_audit
+            output = record_completeness_audit(
+                session_factory(),
+                start_year=args.start_year,
+                end_year=args.end_year,
+            )
         elif args.command == "ingest":
             output = ingest(args)
         elif args.command == "validate":
@@ -224,7 +239,7 @@ def main():
                     session_factory(), client, source=args.source,
                     selection=selection_from_args(args, historical=False),
                     start=args.start, end=args.end, resume=args.resume,
-                    lookback_days=args.lookback_days,
+                    lookback_days=args.lookback_days, window_days=args.window_days,
                 )
         else:
             output = aggregate(args)

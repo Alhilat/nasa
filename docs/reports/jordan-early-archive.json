@@ -1,0 +1,219 @@
+{
+  "catalog": {
+    "url": "https://firms.modaps.eosdis.nasa.gov/data/country/yearly_summary_files.txt",
+    "retrieved_at": "2026-11-14T19:39:53.122432+00:00",
+    "sha256": "a85c319c545f0004ffaa659e5063ed0547cc59c409e16d2a54fdcf37e7a33f8c"
+  },
+  "files": [
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2000/modis_2000_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:53.420157+00:00",
+      "sha256": "ba6a30dfd403351bbbcbba4d7682b417a1730946429633f30f294f5f38a898a6",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 2
+      },
+      "status": "imported",
+      "filename": "modis_2000_Jordan.csv",
+      "source_rows": 2,
+      "invalid_rows": 0,
+      "first_detection": "2000-12-03T08:17:00+00:00",
+      "last_detection": "2000-12-03T08:17:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2001/modis_2001_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:53.922969+00:00",
+      "sha256": "0f93726b23a2ab9e32ae5e6e45396580f090c67d9b816bc8480acdcf21b6bd8b",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 4
+      },
+      "status": "imported",
+      "filename": "modis_2001_Jordan.csv",
+      "source_rows": 4,
+      "invalid_rows": 0,
+      "first_detection": "2001-01-18T08:28:00+00:00",
+      "last_detection": "2001-10-15T08:34:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2002/modis_2002_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:54.210385+00:00",
+      "sha256": "6cb77d0981800457445e711dffaf84cf6d938aa0cf70718cc73c063c68645682",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 12
+      },
+      "status": "imported",
+      "filename": "modis_2002_Jordan.csv",
+      "source_rows": 12,
+      "invalid_rows": 0,
+      "first_detection": "2002-06-18T07:53:00+00:00",
+      "last_detection": "2002-12-19T19:42:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2003/modis_2003_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:54.489366+00:00",
+      "sha256": "165162d5e3a299205538679a305eb59ea10abb53bd91a59fa3c9ce7d2b197d52",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 15
+      },
+      "status": "imported",
+      "filename": "modis_2003_Jordan.csv",
+      "source_rows": 15,
+      "invalid_rows": 0,
+      "first_detection": "2003-01-25T10:31:00+00:00",
+      "last_detection": "2003-10-23T08:16:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2004/modis_2004_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:54.839732+00:00",
+      "sha256": "ad1f205dcb89c6abd36de5ebe073f775e6a49108c96a87a0842635bc81abe931",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 14
+      },
+      "status": "imported",
+      "filename": "modis_2004_Jordan.csv",
+      "source_rows": 14,
+      "invalid_rows": 0,
+      "first_detection": "2004-04-05T08:34:00+00:00",
+      "last_detection": "2004-11-24T08:27:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2005/modis_2005_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:55.139592+00:00",
+      "sha256": "236ff61ac2dac2da0eacff844513eabc2a869d5a5f6355e3e8abf2ae3b206f0a",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 13
+      },
+      "status": "imported",
+      "filename": "modis_2005_Jordan.csv",
+      "source_rows": 13,
+      "invalid_rows": 0,
+      "first_detection": "2005-02-22T10:37:00+00:00",
+      "last_detection": "2005-12-04T23:49:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2006/modis_2006_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:55.422862+00:00",
+      "sha256": "4b123a44accb8c7125fb018e649c8e7714e2703d76a8ad99d03c0b483b6338a1",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 27
+      },
+      "status": "imported",
+      "filename": "modis_2006_Jordan.csv",
+      "source_rows": 27,
+      "invalid_rows": 0,
+      "first_detection": "2006-01-03T08:45:00+00:00",
+      "last_detection": "2006-12-14T08:40:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2007/modis_2007_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:55.713059+00:00",
+      "sha256": "9bbd76d81450ba1f1af8507fd56e21acce66f3f9bbc70f1cbfa2b317c51a55e8",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 21
+      },
+      "status": "imported",
+      "filename": "modis_2007_Jordan.csv",
+      "source_rows": 21,
+      "invalid_rows": 0,
+      "first_detection": "2007-02-19T10:47:00+00:00",
+      "last_detection": "2007-12-29T10:40:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2008/modis_2008_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:56.110826+00:00",
+      "sha256": "c7c586462b4374b9616332be4e8cb36f331cc4eb763b1291ba0d87ea11b972d5",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 32
+      },
+      "status": "imported",
+      "filename": "modis_2008_Jordan.csv",
+      "source_rows": 32,
+      "invalid_rows": 0,
+      "first_detection": "2008-02-03T08:41:00+00:00",
+      "last_detection": "2008-12-22T10:49:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2009/modis_2009_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:56.422851+00:00",
+      "sha256": "0bfdafedacf56fe88b3418349830ee48997234db799f3ab0baf18563f17b08a6",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 21
+      },
+      "status": "imported",
+      "filename": "modis_2009_Jordan.csv",
+      "source_rows": 21,
+      "invalid_rows": 0,
+      "first_detection": "2009-01-22T08:29:00+00:00",
+      "last_detection": "2009-11-22T08:28:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2010/modis_2010_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:56.717372+00:00",
+      "sha256": "b87451b77195037f2208ce7aacf8b7de32df64f5867b4beddd995d7a28db2766",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 17
+      },
+      "status": "imported",
+      "filename": "modis_2010_Jordan.csv",
+      "source_rows": 17,
+      "invalid_rows": 0,
+      "first_detection": "2010-01-05T08:53:00+00:00",
+      "last_detection": "2010-12-29T08:15:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2011/modis_2011_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:57.022485+00:00",
+      "sha256": "bee3b2c83d6ab7c7ed2eb1fe0a8e34fc258cf6ef7b1f302dd57e626f10665d77",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 42
+      },
+      "status": "imported",
+      "filename": "modis_2011_Jordan.csv",
+      "source_rows": 42,
+      "invalid_rows": 0,
+      "first_detection": "2011-01-17T08:46:00+00:00",
+      "last_detection": "2011-12-06T10:52:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2012/modis_2012_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:57.789070+00:00",
+      "sha256": "ade576175403bf1a7b13774b12dd0b01011f19e74042fac79be297dbeab14f84",
+      "sensor": "MODIS",
+      "versions": {
+        "6.2": 12
+      },
+      "status": "imported",
+      "filename": "modis_2012_Jordan.csv",
+      "source_rows": 12,
+      "invalid_rows": 0,
+      "first_detection": "2012-04-09T19:46:00+00:00",
+      "last_detection": "2012-12-23T08:34:00+00:00"
+    },
+    {
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/2012/viirs-snpp_2012_Jordan.csv",
+      "retrieved_at": "2026-11-14T19:39:58.450118+00:00",
+      "sha256": "75de395fc849a69c692f61212728a41c9181f6c4e5fdca7fe29b7e8b89be9029",
+      "sensor": "VIIRS_SNPP",
+      "versions": {
+        "2": 518
+      },
+      "status": "imported",
+      "filename": "viirs-snpp_2012_Jordan.csv",
+      "source_rows": 518,
+      "invalid_rows": 0,
+      "first_detection": "2012-01-20T23:16:00+00:00",
+      "last_detection": "2012-12-31T23:27:00+00:00"
+    }
+  ]
+}

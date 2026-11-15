@@ -13,17 +13,24 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from shapely.geometry import Point, box, shape
 
 from app.catalog import SENSOR_CODES
+from app.completeness import (
+    AUDIT_VERSION,
+    SENSOR_AVAILABILITY,
+    audit_selection_completeness,
+)
 from app.schemas import ObservationQuery
 
-VERSION = "historical-activity-v1"
+VERSION = "historical-activity-v2"
+HISTORY_METRIC = "monthly_normalized_detection_count"
 NOTES = {
     "count": "Exact-payload deduplicated thermal detections, not unique fires or burned area. "
     "Distinct overpasses and product revisions remain distinct. Sensors are never pooled.",
     "coverage": "Absent months are null, not zero. Positive counts do not establish completeness. "
-    "Complete months are caller-attested for this exact area and confidence selection; "
-    "references are retained, not independently verified by PIRX. Archive "
+    "Complete months are caller-attested or source-audited for this exact area and confidence "
+    "selection; references are retained, not independently verified by PIRX. Archive "
     "completeness does not establish satellite exposure or fire absence.",
-    "baseline": "Only complete months of the same sensor, area and calendar month are used. "
+    "baseline": "Only complete months of the same sensor, area and calendar month are used "
+    "(or the validated harmonized series when operational approval exists for the scope). "
     "Each target uses strictly earlier years within the requested baseline interval. "
     "Seasonal profiles describe the complete months of the fixed baseline interval.",
     "percentile": "Linear interpolation at (n-1)*p/100 over sorted reference counts. Strictly "
@@ -45,6 +52,9 @@ NOTES = {
     "exposure-corrected concentration, significance test, or risk map.",
     "trend": "Monthly archived counts and prior-year medians; null months break lines. "
     "No extrapolation, machine learning, causal trend attribution or forecasting.",
+    "harmonization": "Cross-sensor harmonization is applied only when a registered calibration "
+    "model has status 'supported_for_scope', passes fingerprint and product-version checks, "
+    "and covers the selected sensor pair. Candidate-only models are never applied.",
 }
 
 
@@ -132,7 +142,144 @@ def change(current, previous):
     }
 
 
-def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
+def _verify_calibration_model(
+    entry: dict, query: HistoryQuery, sensor_versions: dict[str, set[str]]
+) -> tuple[bool, str | None]:
+    artifact = entry.get("artifact") or {}
+    if not isinstance(artifact, dict) or "model_version" not in artifact:
+        return False, "missing_model_artifact"
+    core = {k: v for k, v in artifact.items() if k != "model_version"}
+    expected_fp = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    ).hexdigest()
+    if artifact.get("model_version") != expected_fp or entry.get("model_version") not in (
+        None,
+        expected_fp,
+    ):
+        return False, "invalid_model_fingerprint"
+    if entry.get("status") != "supported_for_scope":
+        return False, "candidate_only_not_approved"
+    if entry.get("method") not in ("regression", "quantile_mapping"):
+        return False, "baseline_identity_not_calibration"
+    validation = entry.get("validation") or {}
+    if validation.get("status") != "evaluated":
+        return False, "validation_not_evaluated"
+    if validation.get("rejection_reasons"):
+        return False, "validation_rejected"
+    context = artifact.get("context") or {}
+    # Grid-density/occupancy models must never consume raw monthly counts.
+    if artifact.get("metric") != HISTORY_METRIC:
+        return False, "unsupported_history_metric"
+    if entry.get("metric", HISTORY_METRIC) != HISTORY_METRIC:
+        return False, "model_metric_mismatch"
+    if artifact.get("method") != entry.get("method") or artifact.get("bounded_occupancy"):
+        return False, "model_contract_mismatch"
+    scope = context.get("history_scope")
+    if not isinstance(scope, dict):
+        return False, "missing_history_scope"
+    # Approval for a region's counts does not imply approval for arbitrary subsets.
+    if not {"bbox", "polygon", "confidence", "start_year", "end_year"}.issubset(scope):
+        return False, "incomplete_history_scope"
+
+    def geometry(bbox, polygon):
+        area = shape(polygon) if polygon else None
+        if bbox:
+            west, south, east, north = bbox
+            bounds = (
+                box(west, south, east, north)
+                if west < east
+                else box(west, south, 180, north).union(box(-180, south, east, north))
+            )
+            area = bounds if area is None else area.intersection(bounds)
+        return area
+
+    approved_area = geometry(scope["bbox"], scope["polygon"])
+    selected_area = geometry(query.bbox, query.polygon)
+    if approved_area is None or not approved_area.equals(selected_area):
+        return False, "geographic_scope_mismatch"
+    if scope["confidence"] != query.confidence:
+        return False, "confidence_scope_mismatch"
+    if not scope["start_year"] <= query.start_year <= query.end_year <= scope["end_year"]:
+        return False, "temporal_scope_mismatch"
+    if context.get("daynight") != "all" or context.get("grid_size_m") is not None:
+        return False, "observation_stratum_or_grid_mismatch"
+    source_sensor = context.get("source")
+    reference_sensor = context.get("reference")
+    if not source_sensor or not reference_sensor or source_sensor == reference_sensor:
+        return False, "missing_sensor_pair"
+    if not {source_sensor, reference_sensor}.issubset(query.sensors):
+        return False, "sensor_pair_not_selected"
+    native_versions = context.get("native_product_versions") or {}
+    for s_code in (source_sensor, reference_sensor):
+        allowed = {
+            str(v) for v in native_versions.get(s_code, []) if v not in ("native", "test", "")
+        }
+        observed = {
+            str(v) for v in sensor_versions.get(s_code, set()) if v not in ("native", "test", "")
+        }
+        if not allowed or not observed or not observed.issubset(allowed):
+            return False, "product_version_transition_mismatch"
+    return True, None
+
+
+def _predict_calibrated_value(
+    artifact: dict, count: float, calendar_month: int
+) -> tuple[float, bool]:
+    low, high = [float(v) for v in artifact["source_range"]]
+    x = float(count)
+    extrapolated = bool(x < low or x > high)
+    method = artifact["method"]
+    if method == "regression":
+        angle = 2.0 * math.pi * (calendar_month - 1) / 12.0
+        features = [
+            1.0,
+            math.log1p(x),
+            math.sin(angle),
+            math.cos(angle),
+            math.sin(2.0 * angle),
+            math.cos(2.0 * angle),
+        ]
+        coeffs = [float(c) for c in artifact["parameters"]["coefficients"]]
+        z = sum(f * c for f, c in zip(features, coeffs, strict=True))
+        pred = max(0.0, math.expm1(max(-50.0, min(50.0, z))))
+    elif method == "quantile_mapping":
+        quarter = str((calendar_month - 1) // 3 + 1)
+        season = artifact["parameters"]["seasons"][quarter]
+        params = artifact["parameters"]["global"] if "fallback" in season else season
+        knots_x = [float(v) for v in params["x"]]
+        knots_y = [float(v) for v in params["y"]]
+        extrapolated = bool(x < knots_x[0] or x > knots_x[-1])
+        if x <= knots_x[0]:
+            pred = knots_y[0]
+        elif x >= knots_x[-1]:
+            pred = knots_y[-1]
+        else:
+            pred = knots_y[-1]
+            for idx in range(len(knots_x) - 1):
+                if knots_x[idx] <= x <= knots_x[idx + 1]:
+                    span = knots_x[idx + 1] - knots_x[idx]
+                    pred = (
+                        knots_y[idx]
+                        if span == 0
+                        else knots_y[idx]
+                        + (knots_y[idx + 1] - knots_y[idx]) * (x - knots_x[idx]) / span
+                    )
+                    break
+    else:
+        pred = x
+    if artifact.get("bounded_occupancy"):
+        pred = max(0.0, min(1.0, pred))
+    return round(pred, 6), extrapolated
+
+
+def analyze(
+    query: HistoryQuery,
+    records: list[dict],
+    sources: list[dict],
+    *,
+    calibration_models: list[dict] | None = None,
+    audit_sources: bool = True,
+):
     """Apply the same area/time/sensor selection to every analytical period."""
     area = shape(query.polygon) if query.polygon else None
     bounds = None
@@ -169,15 +316,76 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
         raise ValueError("Snapshot contains repeated observation IDs")
     if len({r["record_hash"] for r in records}) != len(records):
         raise ValueError("Snapshot contains repeated normalized payload hashes")
+    all_sources = sorted({s["id"]: s for s in sources}.values(), key=lambda s: str(s["id"]))
+    audited = audit_selection_completeness(
+        start_year=query.start_year,
+        end_year=query.end_year,
+        sensors=query.sensors,
+        bbox=query.bbox,
+        polygon=query.polygon,
+        sources=all_sources if audit_sources else [],
+    )
     used_sources = {s for r in records for s in r["source_ids"]}
-    sources = sorted([s for s in sources if s["id"] in used_sources], key=lambda s: s["id"])
-    if used_sources != {s["id"] for s in sources}:
+    audit_source_ids = {s for info in audited.values() for s in info.get("source_ids", [])}
+    retained_ids = used_sources | audit_source_ids
+    sources = sorted([s for s in all_sources if s["id"] in retained_ids], key=lambda s: s["id"])
+    if not used_sources.issubset({s["id"] for s in sources}):
         raise ValueError("Snapshot is missing source metadata")
+
+    # Track observed product versions and processing levels per sensor from retained sources.
+    source_by_id = {s["id"]: s for s in sources}
+    sensor_versions: dict[str, set[str]] = defaultdict(set)
+    sensor_levels: dict[str, set[str]] = defaultdict(set)
+    for record in records:
+        for sid in record["source_ids"]:
+            src = source_by_id.get(sid)
+            if src:
+                if src.get("product_version"):
+                    sensor_versions[record["sensor_code"]].add(str(src["product_version"]))
+                if src.get("processing_level"):
+                    sensor_levels[record["sensor_code"]].add(str(src["processing_level"]))
+    for (sensor, _m), info in audited.items():
+        for sid in info.get("source_ids", []):
+            src = source_by_id.get(sid)
+            if src:
+                if src.get("product_version"):
+                    sensor_versions[sensor].add(str(src["product_version"]))
+                if src.get("processing_level"):
+                    sensor_levels[sensor].add(str(src["processing_level"]))
+
+    # Evaluate registered calibration models for scope and transition eligibility.
+    evaluated_models = []
+    applied_model = None
+    for entry in sorted(calibration_models or [], key=lambda m: str(m.get("model_version", ""))):
+        ok, rejection = _verify_calibration_model(entry, query, sensor_versions)
+        ctx = (entry.get("artifact") or {}).get("context") or {}
+        evaluated_models.append(
+            {
+                "model_version": entry.get("model_version"),
+                "method": entry.get("method"),
+                "status": entry.get("status"),
+                "source_sensor": ctx.get("source"),
+                "reference_sensor": ctx.get("reference"),
+                "eligible": ok,
+                "rejection_reason": rejection,
+                "validation_rejection_reasons": (entry.get("validation") or {}).get(
+                    "rejection_reasons", []
+                ),
+            }
+        )
+        if ok and applied_model is None:
+            applied_model = entry
+
     inputs = {
         "algorithm_version": VERSION,
         "query": query.model_dump(mode="json"),
         "records": records,
         "sources": sources,
+        **(
+            {"calibration_model_version": applied_model["model_version"]}
+            if applied_model is not None
+            else {}
+        ),
     }
     canonical = json.dumps(inputs, sort_keys=True, separators=(",", ":"), allow_nan=False)
     analysis_id = hashlib.sha256(canonical.encode()).hexdigest()
@@ -190,15 +398,59 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
         x = min(int(360 / size) - 1, math.floor((record["longitude"] + 180) / size))
         y = min(int(180 / size) - 1, math.floor((record["latitude"] + 90) / size))
         cells[record["sensor_code"], x, y].append(record)
-    coverage = {(c.sensor_code, c.month): c.reference for c in query.complete_months}
+    declared = {(c.sensor_code, c.month): c.reference for c in query.complete_months}
+
+    cal_artifact = applied_model["artifact"] if applied_model else None
+    cal_ctx = (cal_artifact or {}).get("context") or {}
+    cal_source = cal_ctx.get("source")
+    cal_reference = cal_ctx.get("reference")
+    cal_version = applied_model["model_version"] if applied_model else None
+
     monthly, indexed = [], {}
     for sensor in query.sensors:
         for year in range(query.start_year, query.end_year + 1):
             for month in range(1, 13):
                 label = f"{year:04d}-{month:02d}"
                 rows = buckets[sensor, label]
-                complete = (sensor, label) in coverage
+                audit_info = audited[sensor, label]
+                if (sensor, label) in declared:
+                    complete = True
+                    coverage_ref = declared[sensor, label]
+                    completeness_origin = "caller_declaration"
+                    archive_completeness = "complete"
+                    raw_status = "complete_caller_declared"
+                elif audit_info["completeness"] == "complete":
+                    complete = True
+                    coverage_ref = audit_info["reference"]
+                    completeness_origin = "source_audit"
+                    archive_completeness = audit_info["archive_completeness"]
+                    raw_status = audit_info["missing_data_status"]
+                else:
+                    complete = False
+                    coverage_ref = None
+                    completeness_origin = "unattested"
+                    archive_completeness = audit_info["archive_completeness"]
+                    raw_status = audit_info["missing_data_status"]
+
                 count = len(rows) if rows or complete else None
+                harmonized_val = None
+                harmonized_extrap = None
+                comp_series = "native_sensor"
+                comp_val = count
+                model_ver = None
+                if cal_artifact is not None and sensor in (cal_source, cal_reference):
+                    comp_series = "validated_harmonized"
+                    model_ver = cal_version
+                    comp_val = None
+                    if complete and count is not None:
+                        if sensor == cal_source:
+                            harmonized_val, harmonized_extrap = _predict_calibrated_value(
+                                cal_artifact, count, month
+                            )
+                        else:
+                            harmonized_val, harmonized_extrap = float(count), False
+                        comp_val = harmonized_val
+
                 row = {
                     "sensor_code": sensor,
                     "month": label,
@@ -206,11 +458,28 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
                     "calendar_month": month,
                     "count": count,
                     "completeness": "complete" if complete else "unknown",
-                    "coverage_reference": coverage.get((sensor, label)),
+                    "archive_completeness": archive_completeness,
+                    "completeness_origin": completeness_origin,
+                    "observation_coverage": "unknown",
+                    "coverage_reference": coverage_ref,
                     "source_ids": sorted({s for r in rows for s in r["source_ids"]}),
+                    "completeness_source_ids": sorted(audit_info.get("source_ids", [])),
+                    "comparison_series": comp_series,
+                    "comparison_value": comp_val,
+                    "comparison_units": (
+                        f"{cal_reference}-equivalent detections per month"
+                        if comp_series == "validated_harmonized"
+                        else "detections per month"
+                    ),
+                    "harmonized_value": harmonized_val,
+                    "harmonized_extrapolated": harmonized_extrap,
+                    "calibration_model_version": model_ver,
+                    "_raw_missing_status": raw_status,
+                    "_audit_reason": audit_info["reason"],
                 }
                 indexed[sensor, year, month] = row
                 monthly.append(row)
+
     seasonal = []
     for sensor in query.sensors:
         for month in range(1, 13):
@@ -219,11 +488,16 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
                 for year in range(query.baseline_start_year, query.baseline_end_year + 1)
                 if indexed[sensor, year, month]["completeness"] == "complete"
             ]
-            counts = [r["count"] for r in baseline]
+            counts = [r["comparison_value"] for r in baseline]
             seasonal.append(
                 {
                     "sensor_code": sensor,
                     "calendar_month": month,
+                    "comparison_series": (
+                        "validated_harmonized"
+                        if cal_artifact is not None and sensor in (cal_source, cal_reference)
+                        else "native_sensor"
+                    ),
                     "sample_years": [r["year"] for r in baseline],
                     "sample_size": len(counts),
                     "median": median(counts) if counts else None,
@@ -235,45 +509,137 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
                     else None,
                 }
             )
+
+    baseline_interval_label = f"{query.baseline_start_year}–{query.baseline_end_year}"
+    status_counts: dict[str, int] = defaultdict(int)
     for row in monthly:
         sensor, year, month = row["sensor_code"], row["year"], row["calendar_month"]
-        years = [
-            y
-            for y in range(query.baseline_start_year, min(year - 1, query.baseline_end_year) + 1)
-            if indexed[sensor, y, month]["completeness"] == "complete"
-        ]
-        counts = [indexed[sensor, y, month]["count"] for y in years]
-        enough = len(counts) >= query.min_baseline_years
-        center = median(counts) if enough else None
-        lower = percentile(counts, 100 - query.percentile) if enough else None
-        upper = percentile(counts, query.percentile) if enough else None
-        mad = median([abs(v - center) for v in counts]) if enough else None
+        raw_status = row.pop("_raw_missing_status")
+        audit_reason = row.pop("_audit_reason")
+        prior_end = min(year - 1, query.baseline_end_year)
+        years = []
+        values = []
+        used_baseline_sensors = set()
+        for y in range(query.baseline_start_year, prior_end + 1):
+            cand = indexed[sensor, y, month]
+            if cand["completeness"] == "complete":
+                years.append(y)
+                values.append(cand["comparison_value"])
+                used_baseline_sensors.add(sensor)
+            elif (
+                cal_artifact is not None
+                and sensor == cal_source
+                and cal_reference in query.sensors
+                and indexed[cal_reference, y, month]["completeness"] == "complete"
+            ):
+                years.append(y)
+                values.append(indexed[cal_reference, y, month]["comparison_value"])
+                used_baseline_sensors.add(cal_reference)
+
+        enough = len(values) >= query.min_baseline_years
+        center = median(values) if enough else None
+        lower = percentile(values, 100 - query.percentile) if enough else None
+        upper = percentile(values, query.percentile) if enough else None
+        mad = median([abs(v - center) for v in values]) if enough else None
         eligible = row["completeness"] == "complete"
         status = "incomplete_period" if not eligible else "insufficient_history"
-        if eligible and enough:
+        target_val = row["comparison_value"]
+        if eligible and enough and target_val is not None:
             status = (
                 "unusually_high"
-                if row["count"] > upper
+                if target_val > upper
                 else "unusually_low"
-                if row["count"] < lower
+                if target_val < lower
                 else "within_range"
             )
+        if not eligible:
+            missing_status = raw_status
+            missing_reason = audit_reason
+        elif not enough:
+            missing_status = "complete_insufficient_baseline"
+            if prior_end < query.baseline_start_year:
+                missing_reason = (
+                    f"Archive month is complete ({raw_status}), but {year} has 0 prior years "
+                    f"inside the {baseline_interval_label} baseline interval "
+                    f"({query.min_baseline_years} required)."
+                )
+            else:
+                missing_reason = (
+                    f"Archive month is complete ({raw_status}), but only {len(values)} of "
+                    f"{query.min_baseline_years} required prior complete reference years are "
+                    f"available in {query.baseline_start_year}–{prior_end}."
+                )
+        else:
+            missing_status = "complete_assessed"
+            missing_reason = (
+                f"Archive month is complete ({raw_status}) with {len(values)} prior complete "
+                f"reference years ({years[0]}–{years[-1]}). Satellite observation coverage "
+                "remains unknown."
+            )
+        status_counts[missing_status] += 1
+
+        row_limitations = [
+            (
+                "Counts represent deduplicated satellite thermal-anomaly detections, "
+                "not unique fires or burned area."
+            ),
+            (
+                "Archive completeness is distinct from satellite observation coverage "
+                "(swath, cloud, smoke), which is unknown."
+            ),
+        ]
+        if row["comparison_series"] == "validated_harmonized":
+            row_limitations.append(
+                f"Comparison uses validated harmonized series ({cal_version[:12]}) mapped to "
+                f"{cal_reference} reference scale, not physical fire truth."
+            )
+            if row["harmonized_extrapolated"]:
+                row_limitations.append(
+                    "Month activity falls outside the calibration training range; "
+                    "harmonized estimate is extrapolated."
+                )
+        else:
+            row_limitations.append(
+                "No validated cross-sensor harmonization model is applied; "
+                "comparison is restricted to native single-sensor history."
+            )
+        if not eligible or not enough:
+            row_limitations.append(missing_reason)
+
         row.update(
             {
                 "baseline_years": years,
-                "baseline_size": len(counts),
+                "baseline_size": len(values),
+                "baseline_period": f"{years[0]}–{years[-1]}" if years else None,
+                "baseline_window": (
+                    f"{query.baseline_start_year}–{prior_end}"
+                    if prior_end >= query.baseline_start_year
+                    else None
+                ),
+                "min_baseline_years": query.min_baseline_years,
+                "baseline_sensors": sorted(used_baseline_sensors) if years else [sensor],
                 "historical_median": center,
                 "lower_threshold": lower,
                 "upper_threshold": upper,
                 "anomaly_status": status,
-                "robust_z": (row["count"] - center) / (1.4826 * mad)
-                if eligible and enough and mad
+                "missing_data_status": missing_status,
+                "missing_data_reason": missing_reason,
+                "limitations": row_limitations,
+                "robust_z": (target_val - center) / (1.4826 * mad)
+                if eligible and enough and mad and target_val is not None
                 else None,
             }
         )
         previous = indexed.get((sensor, year - 1, month))
+        if (
+            cal_artifact is not None
+            and sensor == cal_source
+            and (not previous or previous["completeness"] != "complete")
+            and cal_reference in query.sensors
+        ):
+            previous = indexed.get((cal_reference, year - 1, month))
         row["year_over_year"] = (
-            {"status": "comparable", **change(row["count"], previous["count"])}
+            {"status": "comparable", **change(target_val, previous["comparison_value"])}
             if eligible and previous and previous["completeness"] == "complete"
             else {
                 "status": "incomplete_or_missing_pair",
@@ -359,11 +725,155 @@ def analyze(query: HistoryQuery, records: list[dict], sources: list[dict]):
                     },
                 }
             )
+
+    sensor_transitions = []
+    for sensor in query.sensors:
+        avail = SENSOR_AVAILABILITY.get(sensor, {})
+        pre_op_count = sum(
+            1
+            for r in monthly
+            if r["sensor_code"] == sensor and r["missing_data_status"] == "pre_operational_sensor"
+        )
+        partial_months = [
+            r["month"]
+            for r in monthly
+            if r["sensor_code"] == sensor
+            and r["missing_data_status"] == "sensor_transition_partial_month"
+        ]
+        if pre_op_count or partial_months:
+            sensor_transitions.append(
+                {
+                    "sensor_code": sensor,
+                    "transition_type": "sensor_operational_start",
+                    "operational_start": avail.get("operational_start"),
+                    "partial_start_month": avail.get("partial_start_month"),
+                    "first_full_month": avail.get("first_full_month"),
+                    "pre_operational_months_in_selection": pre_op_count,
+                    "partial_transition_months_in_selection": partial_months,
+                    "note": (
+                        f"{sensor} operational archive began {avail.get('operational_start')}; "
+                        + (
+                            f"{avail.get('partial_start_month')} is a partial start month "
+                            "and excluded from baselines; "
+                            if avail.get("partial_start_month")
+                            else ""
+                        )
+                        + f"first full archive month is {avail.get('first_full_month')}."
+                    ),
+                }
+            )
+        versions = sorted(sensor_versions.get(sensor, set()))
+        levels = sorted(sensor_levels.get(sensor, set()))
+        if len(versions) > 1 or len(levels) > 1:
+            sensor_transitions.append(
+                {
+                    "sensor_code": sensor,
+                    "transition_type": "processing_or_product_revision",
+                    "product_versions": versions,
+                    "processing_levels": levels,
+                    "note": (
+                        f"{sensor} spans product versions {versions} and "
+                        f"processing levels {levels}; "
+                        "NRT and mixed-revision months are excluded from standard baselines."
+                    ),
+                }
+            )
+
+    families = {SENSOR_AVAILABILITY.get(s, {}).get("family", s) for s in query.sensors}
+    if len(families) > 1:
+        sensor_transitions.append(
+            {
+                "sensor_code": ",".join(query.sensors),
+                "transition_type": "cross_sensor_family",
+                "applied_calibration_model": cal_version,
+                "harmonized": applied_model is not None,
+                "note": (
+                    f"Validated calibration model {cal_version[:12]} harmonizes {cal_source} to "
+                    f"{cal_reference} scale across sensor families."
+                    if applied_model is not None
+                    else "Multiple sensor families selected without an approved calibration model; "
+                    "MODIS and VIIRS series remain strictly separate."
+                ),
+            }
+        )
+
+    harmonization_info = {
+        "available": applied_model is not None,
+        "applied": applied_model is not None,
+        "status": (
+            "supported_for_scope"
+            if applied_model is not None
+            else "candidate_only"
+            if evaluated_models
+            else "none_registered"
+        ),
+        "comparison_series": (
+            "validated_harmonized" if applied_model is not None else "native_sensor"
+        ),
+        "model_version": cal_version,
+        "method": applied_model.get("method") if applied_model else None,
+        "source_sensor": cal_source,
+        "reference_sensor": cal_reference,
+        "candidate_models": evaluated_models,
+        "reason": (
+            f"Validated {applied_model['method']} model ({cal_version[:12]}) applied for "
+            f"{cal_source} -> {cal_reference}."
+            if applied_model is not None
+            else (
+                "Registered models are not eligible for this query's metric, validated scope, "
+                "versions or approval status; native single-sensor series are used. "
+                "See candidate_models for rejection reasons."
+                if evaluated_models
+                else "No validated calibration model is registered for this selection; "
+                "native single-sensor series are used."
+            )
+        ),
+    }
+
+    global_limitations = [
+        NOTES["count"],
+        NOTES["coverage"],
+        (
+            "Archive completeness records source-file ingestion for the selected area and month; "
+            "satellite observation coverage (swath, cloud, smoke) remains unknown."
+        ),
+        harmonization_info["reason"],
+    ]
+    if status_counts.get("spatial_scope_mismatch"):
+        global_limitations.append(
+            "Some source footprints do not cover the exact selected area. Country exports "
+            "cannot certify a larger rectangle; select a covered polygon or import sources "
+            "covering the entire selection."
+        )
+    if status_counts.get("nrt_unreconciled"):
+        global_limitations.append(
+            "Near-real-time (NRT) API months are retained for situational inspection "
+            "but excluded from standard-product historical baselines."
+        )
+
     return {
         "analysis_id": analysis_id,
         "algorithm_version": VERSION,
         "query": query.model_dump(mode="json"),
         "time_zone": "UTC",
+        "baseline_period": baseline_interval_label,
+        "min_baseline_years": query.min_baseline_years,
+        "observation_coverage": "unknown",
+        "completeness_summary": {
+            "audit_version": AUDIT_VERSION,
+            "observation_coverage": "unknown",
+            "complete_months_count": sum(1 for r in monthly if r["completeness"] == "complete"),
+            "unknown_months_count": sum(1 for r in monthly if r["completeness"] != "complete"),
+            "assessed_months_count": sum(
+                1
+                for r in monthly
+                if r["anomaly_status"] in {"within_range", "unusually_high", "unusually_low"}
+            ),
+            "status_counts": dict(sorted(status_counts.items())),
+        },
+        "harmonization": harmonization_info,
+        "sensor_transitions": sensor_transitions,
+        "limitations": global_limitations,
         "metric_explanations": NOTES,
         "forecasting": False,
         "sources": sources,
@@ -382,8 +892,19 @@ def calendar_csv(result):
         "month",
         "count",
         "completeness",
+        "archive_completeness",
+        "observation_coverage",
+        "missing_data_status",
+        "missing_data_reason",
         "coverage_reference_json",
+        "comparison_series",
+        "comparison_value",
+        "comparison_units",
+        "harmonized_value",
+        "calibration_model_version",
         "historical_median",
+        "baseline_period",
+        "min_baseline_years",
         "baseline_size",
         "baseline_years_json",
         "lower_threshold",
@@ -392,6 +913,7 @@ def calendar_csv(result):
         "robust_z",
         "yoy_difference",
         "yoy_percent_change",
+        "limitations_json",
         "analysis_id",
         "algorithm_version",
         "query_json",
@@ -406,13 +928,14 @@ def calendar_csv(result):
         export.update(
             coverage_reference_json=json.dumps(row["coverage_reference"]),
             baseline_years_json=json.dumps(row["baseline_years"]),
+            limitations_json=json.dumps(row.get("limitations", [])),
             yoy_difference=row["year_over_year"]["difference"],
             yoy_percent_change=row["year_over_year"]["percent_change"],
             analysis_id=result["analysis_id"],
             algorithm_version=VERSION,
             query_json=json.dumps(result["query"], sort_keys=True),
             source_metadata_json=json.dumps(
-                [source_index[s] for s in row["source_ids"]], sort_keys=True
+                [source_index[s] for s in row["source_ids"] if s in source_index], sort_keys=True
             ),
             science_note=NOTES["count"] + " " + NOTES["coverage"],
         )

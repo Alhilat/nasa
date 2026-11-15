@@ -9,7 +9,7 @@ import pytest
 from app.core.config import Settings
 from app.db import get_session
 from app.history import HistoryQuery, analyze
-from app.intelligence.agent import AgentService, validate_interpretation
+from app.intelligence.agent import AgentService, GoogleProvider, validate_interpretation
 from app.intelligence.routes import get_agent, markdown_report
 from app.intelligence.schemas import ChatRequest, DateWindow, Scope
 from app.intelligence.tools import CACHE, ToolRegistry
@@ -473,3 +473,360 @@ def test_calibration_metadata_cites_original_inputs_and_protocol_without_private
     assert evidence.data["models"][0]["evaluation_protocol"]["test_years"] == [2022, 2023]
     assert evidence.data["calibration_applied"] is False
     assert "C:/private" not in evidence.model_dump_json()
+
+
+class _FakeModels:
+    def __init__(self, handler):
+        self.handler = handler
+        self.models_called = []
+
+    def generate_content(self, *, model, contents, config):
+        self.models_called.append(model)
+        return self.handler(model, contents, config)
+
+
+class _FakeGenAIClient:
+    def __init__(self, handler):
+        self.models = _FakeModels(handler)
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
+def _google_provider_with_handler(monkeypatch, handler, **setting_overrides):
+    fake_client = _FakeGenAIClient(handler)
+    monkeypatch.setattr("app.intelligence.agent.genai.Client", lambda **_kwargs: fake_client)
+    cfg = settings(**setting_overrides)
+    return GoogleProvider(cfg), fake_client
+
+
+def test_google_provider_falls_back_during_choose_and_sticks_to_working_model(
+    context, monkeypatch
+):
+    choose_rounds = 0
+
+    def handler(model, contents, config):
+        nonlocal choose_rounds
+        if model == "gemini-3.5-flash-lite":
+            raise errors.ServerError(503, {"error": {"message": "temporary overload"}})
+        if getattr(config, "tools", None):
+            choose_rounds += 1
+            if choose_rounds == 1:
+                call = types.FunctionCall(
+                    name="get_historical_activity", args={}, id="fallback-call-1"
+                )
+                return SimpleNamespace(
+                    candidates=[
+                        SimpleNamespace(
+                            content=types.Content(
+                                role="model", parts=[types.Part(function_call=call)]
+                            )
+                        )
+                    ]
+                )
+            return SimpleNamespace(
+                candidates=[
+                    SimpleNamespace(
+                        content=types.Content(
+                            role="model", parts=[types.Part.from_text(text="Ready")]
+                        )
+                    )
+                ]
+            )
+        prompt_payload = json.loads(contents)
+        evidence_id = prompt_payload["evidence"][0]["id"]
+        return SimpleNamespace(text=json.dumps(prose(evidence_id)))
+
+    provider, fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    )
+    service = AgentService(
+        settings(
+            gemini_model="gemini-3.5-flash-lite",
+            gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+        ),
+        lambda _cfg: provider,
+    )
+    reply = service.chat(
+        ChatRequest(message="Explain the archive", context=context), Session(), "c"
+    )
+    assert reply.status == "interpreted"
+    assert reply.model == "gemini-2.5-flash-lite"
+    assert (
+        "Primary model gemini-3.5-flash-lite failed; fell back to gemini-2.5-flash-lite."
+        in reply.notices
+    )
+    # 3.5 attempted once on first choose round; round 2 choose and interpret go straight to 2.5.
+    assert fake_client.models.models_called == [
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite",
+    ]
+    assert fake_client.closed
+
+
+def test_google_provider_falls_back_during_interpret(context, monkeypatch):
+    choose_rounds = 0
+
+    def handler(model, contents, config):
+        nonlocal choose_rounds
+        if getattr(config, "tools", None):
+            choose_rounds += 1
+            if choose_rounds == 1:
+                call = types.FunctionCall(
+                    name="get_historical_activity", args={}, id="fallback-call-2"
+                )
+                return SimpleNamespace(
+                    candidates=[
+                        SimpleNamespace(
+                            content=types.Content(
+                                role="model", parts=[types.Part(function_call=call)]
+                            )
+                        )
+                    ]
+                )
+            return SimpleNamespace(
+                candidates=[
+                    SimpleNamespace(
+                        content=types.Content(
+                            role="model", parts=[types.Part.from_text(text="Ready")]
+                        )
+                    )
+                ]
+            )
+        if model == "gemini-3.5-flash-lite":
+            raise errors.ClientError(429, {"error": {"message": "model quota reached"}})
+        prompt_payload = json.loads(contents)
+        evidence_id = prompt_payload["evidence"][0]["id"]
+        return SimpleNamespace(text=json.dumps(prose(evidence_id)))
+
+    provider, fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    )
+    service = AgentService(
+        settings(
+            gemini_model="gemini-3.5-flash-lite",
+            gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+        ),
+        lambda _cfg: provider,
+    )
+    reply = service.chat(
+        ChatRequest(message="Explain the archive", context=context), Session(), "c"
+    )
+    assert reply.status == "interpreted"
+    assert reply.model == "gemini-2.5-flash-lite"
+    assert (
+        "Primary model gemini-3.5-flash-lite failed; fell back to gemini-2.5-flash-lite."
+        in reply.notices
+    )
+    assert fake_client.models.models_called == [
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash-lite",
+    ]
+
+
+@pytest.mark.parametrize("code", [401, 403])
+def test_google_provider_does_not_fallback_on_auth_errors(context, monkeypatch, code):
+    def handler(_model, _contents, _config):
+        raise errors.ClientError(code, {"error": {"message": "secret-key-error-never-leak"}})
+
+    provider, fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    )
+    service = AgentService(
+        settings(
+            gemini_model="gemini-3.5-flash-lite",
+            gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+        ),
+        lambda _cfg: provider,
+    )
+    with pytest.raises(HTTPException) as exc:
+        service.chat(ChatRequest(message="Explain", context=context), Session(), "c")
+    assert exc.value.status_code == 503
+    assert "secret-key-error" not in exc.value.detail
+    assert fake_client.models.models_called == ["gemini-3.5-flash-lite"]
+
+
+def test_google_provider_exhausted_fallback_chain_raises_sanitized_http_error(context, monkeypatch):
+    def handler(model, _contents, _config):
+        if model == "gemini-2.5-flash":
+            raise errors.ClientError(429, {"error": {"message": "all-quota-exhausted"}})
+        raise errors.ClientError(404, {"error": {"message": "model not found"}})
+
+    provider, fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    )
+    service = AgentService(
+        settings(
+            gemini_model="gemini-3.5-flash-lite",
+            gemini_fallback_models=["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+        ),
+        lambda _cfg: provider,
+    )
+    with pytest.raises(HTTPException) as exc:
+        service.chat(ChatRequest(message="Explain", context=context), Session(), "c")
+    assert exc.value.status_code == 429
+    assert fake_client.models.models_called == [
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash",
+    ]
+
+
+def test_settings_fallback_models_and_status_endpoint():
+    parsed = settings(gemini_fallback_models="gemini-2.5-flash-lite, gemini-2.5-flash")
+    assert parsed.gemini_fallback_models == ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+    with pytest.raises(ValueError):
+        settings(gemini_fallback_models="not-a-gemini-model")
+
+    service = AgentService(parsed, Provider)
+    app.dependency_overrides[get_agent] = lambda: service
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/ai/status")
+            assert response.status_code == 200
+            assert response.json()["fallback_models"] == [
+                "gemini-2.5-flash-lite",
+                "gemini-2.5-flash",
+            ]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_google_provider_falls_back_when_interpret_fails_validation(context, monkeypatch):
+    choose_rounds = 0
+
+    def handler(model, contents, config):
+        nonlocal choose_rounds
+        if getattr(config, "tools", None):
+            choose_rounds += 1
+            if choose_rounds == 1:
+                call = types.FunctionCall(
+                    name="get_historical_activity", args={}, id="fallback-val-1"
+                )
+                return SimpleNamespace(
+                    candidates=[
+                        SimpleNamespace(
+                            content=types.Content(
+                                role="model", parts=[types.Part(function_call=call)]
+                            )
+                        )
+                    ]
+                )
+            return SimpleNamespace(
+                candidates=[
+                    SimpleNamespace(
+                        content=types.Content(
+                            role="model", parts=[types.Part.from_text(text="Ready")]
+                        )
+                    )
+                ]
+            )
+        prompt_payload = json.loads(contents)
+        evidence_id = prompt_payload["evidence"][0]["id"]
+        if model == "gemini-3.5-flash-lite":
+            return SimpleNamespace(text=json.dumps({"executive_summary": []}))
+        return SimpleNamespace(text=json.dumps(prose(evidence_id)))
+
+    cfg = settings(
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-3.1-flash-lite", "gemini-3.5-flash"],
+    )
+    provider, fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-3.1-flash-lite", "gemini-3.5-flash"],
+    )
+    service = AgentService(cfg, lambda _cfg: provider)
+    reply = service.chat(
+        ChatRequest(message="Explain the archive", context=context), Session(), "c"
+    )
+    assert reply.status == "interpreted"
+    assert reply.model == "gemini-3.1-flash-lite"
+    assert (
+        "Primary model gemini-3.5-flash-lite failed; fell back to gemini-3.1-flash-lite."
+        in reply.notices
+    )
+    assert fake_client.models.models_called == [
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ]
+
+
+def test_google_provider_sanitizes_minor_forbidden_tokens_in_interpret(context, monkeypatch):
+    choose_rounds = 0
+
+    def handler(_model, contents, config):
+        nonlocal choose_rounds
+        if getattr(config, "tools", None):
+            choose_rounds += 1
+            if choose_rounds == 1:
+                call = types.FunctionCall(
+                    name="get_historical_activity", args={}, id="sanitize-call-1"
+                )
+                return SimpleNamespace(
+                    candidates=[
+                        SimpleNamespace(
+                            content=types.Content(
+                                role="model", parts=[types.Part(function_call=call)]
+                            )
+                        )
+                    ]
+                )
+            return SimpleNamespace(
+                candidates=[
+                    SimpleNamespace(
+                        content=types.Content(
+                            role="model", parts=[types.Part.from_text(text="Ready")]
+                        )
+                    )
+                ]
+            )
+        prompt_payload = json.loads(contents)
+        evidence_id = prompt_payload["evidence"][0]["id"]
+        return SimpleNamespace(
+            text=json.dumps(
+                prose(
+                    evidence_id,
+                    "VIIRS NOAA-20 observations in 2026 are absent rather than zero.",
+                )
+            )
+        )
+
+    cfg = settings(
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-3.1-flash-lite"],
+    )
+    provider, _fake_client = _google_provider_with_handler(
+        monkeypatch,
+        handler,
+        gemini_model="gemini-3.5-flash-lite",
+        gemini_fallback_models=["gemini-3.1-flash-lite"],
+    )
+    service = AgentService(cfg, lambda _cfg: provider)
+    reply = service.chat(
+        ChatRequest(message="Explain the archive", context=context), Session(), "c"
+    )
+    assert reply.status == "interpreted"
+    assert reply.model == "gemini-3.5-flash-lite"
+    text = reply.interpretation.executive_summary[0].text
+    assert "NOAA-20" not in text and "zero" not in text.lower() and "2026" not in text

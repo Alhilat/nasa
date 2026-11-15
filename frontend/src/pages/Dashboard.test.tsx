@@ -183,3 +183,70 @@ it('clears coverage declarations when a date preset changes their selection', as
   fireEvent.click(screen.getByRole('button', { name: /Apply filters/ }));
   await waitFor(() => expect(vi.mocked(historyRequest).mock.calls.at(-1)![0]).toMatchObject({ start_year: 2025, complete_months: [] }));
 });
+
+it('displays selected month comparison against historical median with baseline period, reference years, missing-data status, and limitations', async () => {
+  vi.mocked(historyRequest).mockImplementation(async query => ({
+    query,
+    analysis_id: 'synthetic-comparison-test',
+    baseline_period: '2013–2025',
+    min_baseline_years: 3,
+    observation_coverage: 'unknown',
+    sources: [],
+    metric_explanations: {},
+    limitations: ['Archive completeness is distinct from satellite observation coverage.'],
+    monthly: [
+      {
+        sensor_code: 'MODIS_TERRA',
+        month: '2016-01',
+        count: 42,
+        completeness: 'complete',
+        archive_completeness: 'complete',
+        observation_coverage: 'unknown',
+        missing_data_status: 'complete_assessed',
+        missing_data_reason: 'Archive month is complete with 3 prior reference years (2013–2015).',
+        comparison_series: 'validated_harmonized',
+        comparison_value: 21,
+        harmonized_value: 21,
+        historical_median: 10,
+        lower_threshold: 5,
+        upper_threshold: 18,
+        baseline_size: 3,
+        baseline_period: '2013–2015',
+        min_baseline_years: 3,
+        anomaly_status: 'unusually_high',
+        robust_z: 3.5,
+        year_over_year: { difference: 11, percent_change: 110 },
+        limitations: ['Counts represent deduplicated satellite thermal-anomaly detections, not unique fires.'],
+      },
+      {
+        sensor_code: 'MODIS_TERRA',
+        month: '2016-02',
+        count: null,
+        completeness: 'unknown',
+        archive_completeness: 'partial',
+        observation_coverage: 'unknown',
+        missing_data_status: 'partial_month_archive',
+        missing_data_reason: 'Only 10 of 29 UTC days have imported API windows.',
+        comparison_series: 'native_sensor',
+        historical_median: null,
+        lower_threshold: null,
+        upper_threshold: null,
+        baseline_size: 0,
+        baseline_period: null,
+        min_baseline_years: 3,
+        anomaly_status: 'incomplete_period',
+        robust_z: null,
+        year_over_year: { difference: null, percent_change: null },
+      },
+    ],
+  } as unknown as HistoryResult));
+  open();
+  expect(await screen.findByText('2013–2015')).toBeTruthy();
+  expect(screen.getByText('3 (min 3)')).toBeTruthy();
+  expect(screen.getByText('Archive complete · assessed')).toBeTruthy();
+  expect(screen.getByText('Validated harmonized')).toBeTruthy();
+  expect(screen.getByText(/unusually high/i)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Comparison month'), { target: { value: '2016-02' } });
+  expect(screen.getByText('Partial month archive')).toBeTruthy();
+  expect(screen.getByText('Only 10 of 29 UTC days have imported API windows.')).toBeTruthy();
+});

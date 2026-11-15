@@ -1,5 +1,10 @@
 # NASA FIRMS ingestion
 
+For the extended Jordan archive, actual imports, gaps and update commands, see
+[Jordan archive audit](jordan-archive.md). The old Jordan historical profile below
+remains a fixed calibration selection; it must not be used unmodified for earlier
+or current-year file imports.
+
 The ingestion module supports official MODIS Collection 6.1 CSV exports, VIIRS S-NPP 375 m CSVs, NOAA-20/21 CSVs, and optional recent/standard FIRMS area API sources. Source bytes and every parsed native field are retained. Normalized records, raw source records, provenance links and quality reports are separate database objects.
 
 ## Start and migrate
@@ -102,7 +107,7 @@ Choose dates within current source availability; the following shows the CLI sha
 
 Use `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, or `VIIRS_NOAA21_NRT` for recent VIIRS. The corresponding `_SP` identifiers are also supported where NASA’s availability endpoint permits them. Recent profile mode uses only the Jordan spatial envelope; its dates come from the required API flags, not the historical profile interval.
 
-Each API request fetches one UTC date using the documented area endpoint. NASA allows 1–5 days per call and documents 5,000 transactions per 10 minutes; multi-day calls may cost multiple transactions. This client paces attempts at least one second apart and caps attempts per invocation (default 200), including retries. It retries network timeouts and HTTP 408/429/500/502/503/504 with bounded exponential backoff/jitter. `Retry-After` seconds or HTTP dates are honored. If NASA asks for more than 60 seconds, the client stops with a resume-later message rather than retrying early. A 429 without `Retry-After` is treated as a possible 600-second quota window. Permanent HTTP errors, redirects and HTTP-200 error text are rejected. [NASA area API contract](https://firms.modaps.eosdis.nasa.gov/api/area).
+Each API request fetches one UTC date by default; `--window-days 5` requests up to five days per call, including a shorter final window. NASA documents 5,000 transactions per 10 minutes; multi-day calls may cost multiple transactions. This client paces attempts at least one second apart and caps attempts per invocation (default 200), including retries. It retries network timeouts and HTTP 408/429/500/502/503/504 with bounded exponential backoff/jitter. `Retry-After` seconds or HTTP dates are honored. If NASA asks for more than 60 seconds, the client stops with a resume-later message rather than retrying early. A 429 without `Retry-After` is treated as a possible 600-second quota window. Permanent HTTP errors, redirects and HTTP-200 error text are rejected. [NASA area API contract](https://firms.modaps.eosdis.nasa.gov/api/area).
 
 The API base host is fixed to NASA HTTPS, redirects are disabled, timeouts are bounded, and each response is capped at 50 MiB after HTTP decompression. CSV bytes are stored unchanged. No key-bearing URL or error body is persisted; HTTPX/httpcore diagnostic logs have a key-redaction filter. Availability is checked before downloading the requested interval. If a source ends or has no requested date, the client reports it rather than fabricating data or switching satellites.
 

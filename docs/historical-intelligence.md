@@ -31,28 +31,40 @@ Invoke-RestMethod -Uri http://localhost:8000/api/v1/analytics/history -Method Po
 Invoke-WebRequest -Uri http://localhost:8000/api/v1/analytics/history/export.csv -Method Post -ContentType application/json -Body $body -OutFile history.csv
 ```
 
-## Missing data and completeness
+## Missing data, archive completeness, and satellite observation coverage
 
-An imported file or a month containing detections does not establish complete archive
-coverage. The current schema has no authoritative exposure/completeness ledger. The
-default request therefore gives observed counts and spatial summaries, but leaves
-comparisons and anomaly decisions unavailable until complete months are declared.
-Missing months are null; no interpolation or automatic zero filling is performed.
-Positive counts with unknown completeness are still shown and labelled unknown.
+Archive completeness and satellite observation coverage are kept strictly distinct:
 
-After auditing the archive for the exact area, sensor and confidence selection, callers
-may supply `complete_months` entries:
+- **Archive completeness (`archive_completeness`)** records whether all FIRMS records from a validated authoritative source stream covering the requested spatial selection, sensor, and full UTC calendar month have been imported into the local archive (`complete`, `partial`, `nrt_complete`, `scope_mismatch`, or `unknown`).
+- **Satellite observation coverage (`observation_coverage`)** describes orbital swath, cloud cover, smoke obscuration, and viewing geometry. Without an independent cell-day observability manifest, `observation_coverage` is always reported as `"unknown"`. Archive completeness never proves cloud-free observation or physical fire absence.
+
+During `POST /api/v1/analytics/history` (and offline snapshots with source metadata), the backend reproducibly audits archive completeness from `SourceFile` and `DataQualityReport` provenance (`backend/app/completeness.py`):
+
+1. **Sensor operational availability and partial start months:** Months preceding a sensor's operational start (`MODIS_TERRA` before `2000-11`, `MODIS_AQUA` before `2002-07`, `VIIRS_SNPP` before `2012-01`) are classified as `pre_operational_sensor`. Partial sensor-start months (`MODIS_AQUA` `2002-07` starting `2002-07-04`, `VIIRS_SNPP` `2012-01` starting `2012-01-20`) are classified as `sensor_transition_partial_month` (`archive_completeness: "partial"`, `completeness: "unknown"`).
+2. **Annual country files:** A matching successful import report (including the source hash and actual filters) can establish completeness only inside the country boundary. Jordan country files never certify either Jordan rectangular envelope. The three Levant country exports likewise do not certify the larger Levant rectangle.
+3. **Bounded FIRMS Area API day windows:** Every full UTC day and the entire selected geometry must be covered by the intersection of the downloaded request and actual import filters. Partial days remain incomplete. Full standard-product months may be complete for the API rectangle itself; this does not make country-only baseline years complete for that rectangle. NRT-only months remain unreconciled. All successful import reports are retained so a wider reimport can add evidence deterministically.
+4. **Unknown months preserved as unknown:** Any month without complete source evidence or caller attestation remains `completeness: "unknown"` (`count: null` when zero detections are present) and is excluded from historical baselines and anomaly decisions.
+
+To run and persist the archive completeness audit in PostGIS (`AnalyticalResult` with `result_type = "archive_completeness_audit"`) and write a deterministic report:
+
+```powershell
+$env:PYTHONPATH="backend;data-pipeline"
+.\.venv\Scripts\python.exe -m firescope_pipeline.cli audit-completeness --start-year 2000 --end-year 2026 --report docs/reports/jordan-archive-completeness.json
+```
+
+Callers may also supply explicit `complete_months` overrides scoped to the request:
 
 ```json
 {"sensor_code":"MODIS_TERRA","month":"2013-01","reference":"your-audit-report#month-2013-01"}
 ```
 
-Declarations are scoped to that request, must be unique, and must fall inside its
-sensor/year selection. The service retains their references but cannot independently
-verify them. These are archive-completeness assertions, not proofs of satellite
-exposure, cloud-free observation or absence of physical fires. Only an explicitly
-complete empty archive month has a count of zero. Do not infer declarations from
-the first/last detection, file names, retrieval dates or consecutive positive months.
+## Validated harmonized series vs native sensor series
+
+Historical comparisons check registered `CalibrationModel` entries in PostGIS (or snapshot `calibration_models`):
+
+- Models must have `status == "supported_for_scope"`, evaluated validation without rejections, a verified fingerprint, and explicitly compatible metric, exact region geometry, confidence filter, approved year range, both selected sensors and known product versions. The historical engine currently supports only `monthly_normalized_detection_count` models with `context.history_scope` (`bbox`, `polygon`, `confidence`, `start_year`, `end_year`), `daynight: "all"` and no physical grid. Grid cell-day density and occupancy models are rejected: raw record counts cannot supply their input units or exposure. Supporting these models requires an implementation of their exact training aggregation and observability inputs first.
+- When registered models are `candidate_only` (as in the current Jordan and Levant validation studies, which did not pass held-out seasonal and trend gates) or no model covers the scope, the engine retains **separate native sensor series** (`comparison_series: "native_sensor"`) and never pools sensors across transitions.
+- Every monthly record, UI comparison card, and CSV/JSON export discloses the `baseline_period`, number of reference years (`baseline_size` and `min_baseline_years`), `missing_data_status`, `observation_coverage`, `comparison_series`, and `limitations`.
 
 ## Metrics
 
@@ -132,3 +144,5 @@ application archive. January counts are 1, 2, 3 and 8 in 2013–2016. The 2016 J
 reference median is 2, the 95th-percentile threshold is 2.9 and its status is unusually
 high. All undeclared months remain unknown. These outputs demonstrate reproducibility,
 not a measured finding about Jordan or NASA data.
+
+The audit algorithm is `archive-completeness-v2`; historical analyses use `historical-activity-v2`. The calendar and both trend views plot `comparison_value` against medians and thresholds in the same units. A missing harmonized value remains missing, even if a native count is present. Exports include `comparison_units`. Current Jordan and Levant models remain candidates; these fixes do not establish a validated continuous cross-sensor series.

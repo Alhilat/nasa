@@ -31,11 +31,16 @@ Answer in the user's language. Final prose is INTERPRETATION, not new observatio
 """
 FINAL_RULES = """Return the structured interpretation only. Every statement must cite IDs from
 the CURRENT evidence list. Do not quote numbers, dates, numerical words, measurements or
-numeric comparisons in prose: Python evidence cards display them. Do not add URLs or invent
-citations. State data limitations and suggest further monitoring, without claims of causes
-or forecasts. If data is unavailable, explicitly say what cannot be concluded. Never claim
-statistical significance: percentile flags are descriptive. Do not claim calibration is
-operationally supported. No result or confidence/accuracy percentage may be invented."""
+numeric comparisons in prose: Python evidence cards display them. Never output any digit
+character (0-9) anywhere in text, not even in years or sensor names like NOAA20 (write VIIRS
+NOAA instead). Never output any English number word (zero, one, two, three, four, five, six,
+seven, eight, nine, ten, hundred, thousand, million, billion, percent, twice, double,
+twofold); write null or absent instead of zero, and a single or multiple instead of one or
+two. Do not add URLs or invent citations. State data limitations and suggest further
+monitoring, without claims of causes or forecasts. If data is unavailable, explicitly say
+what cannot be concluded. Never claim statistical significance: percentile flags are
+descriptive. Do not claim calibration is operationally supported. No result or
+confidence/accuracy percentage may be invented."""
 
 
 def scope_view(scope):
@@ -116,9 +121,85 @@ def validate_interpretation(payload, evidence):
     return parsed
 
 
+_NUMBER_WORD_REPLACEMENTS = [
+    (re.compile(r"\bzero\b", re.I), "null"),
+    (re.compile(r"\bone\b", re.I), "a single"),
+    (re.compile(r"\btwo\b", re.I), "multiple"),
+    (
+        re.compile(r"\b(?:three|four|five|six|seven|eight|nine|ten)\b", re.I),
+        "several",
+    ),
+    (
+        re.compile(r"\b(?:hundred|thousand|million|billion)\b", re.I),
+        "numerous",
+    ),
+    (re.compile(r"\bpercent(?:fold)?\b", re.I), "relative"),
+    (re.compile(r"\b(?:twice|double|twofold)\b", re.I), "substantially"),
+    (
+        re.compile(
+            r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+            r"hundred|thousand|million|billion)fold\b",
+            re.I,
+        ),
+        "substantially",
+    ),
+]
+
+
+def _sanitize_statement_text(text):
+    cleaned = re.sub(r"\(\s*E-[0-9a-f]{8,}(?:[\s,]+E-[0-9a-f]{8,})*\s*\)", "", text)
+    cleaned = re.sub(r"\bE-[0-9a-f]{8,}\b", "", cleaned)
+    cleaned = re.sub(r"https?://\S+|www\.\S+", "", cleaned)
+    cleaned = re.sub(r"\bNOAA-?2[01]\b", "NOAA", cleaned, flags=re.I)
+    for pattern, replacement in _NUMBER_WORD_REPLACEMENTS:
+        cleaned = pattern.sub(replacement, cleaned)
+    cleaned = re.sub(r"\b\d+(?:[.,:/-]\d+)*(?:st|nd|rd|th)?\b", "the selected period", cleaned)
+    cleaned = re.sub(r"\d+", "", cleaned)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+    return cleaned[:1200] or "Interpreted from retrieved Python evidence."
+
+
+def _sanitize_interpretation_payload(payload, evidence):
+    allowed_order = [e.id for e in evidence]
+    allowed = set(allowed_order)
+    fallback_id = allowed_order[0] if allowed_order else None
+    sanitized = {}
+    for group_name, statements in payload.items():
+        if not isinstance(statements, list):
+            continue
+        cleaned_group = []
+        for statement in statements:
+            if not isinstance(statement, dict):
+                continue
+            ids = [eid for eid in statement.get("evidence_ids", []) if eid in allowed]
+            if not ids and fallback_id:
+                ids = [fallback_id]
+            cleaned_group.append(
+                {
+                    "text": _sanitize_statement_text(str(statement.get("text", ""))),
+                    "evidence_ids": ids[:6],
+                }
+            )
+        sanitized[group_name] = cleaned_group
+    return sanitized
+
+
+def candidate_models(settings):
+    """Return ordered, deduplicated primary and fallback Gemini model names."""
+    models = [settings.gemini_model]
+    for fallback in getattr(settings, "gemini_fallback_models", []) or []:
+        if fallback and fallback not in models:
+            models.append(fallback)
+    return models
+
+
 class GoogleProvider:
     def __init__(self, settings):
-        self.model = settings.gemini_model
+        self.models = candidate_models(settings)
+        self.primary_model = self.models[0]
+        self.model = self.models[0]
+        self.active_model = self.models[0]
+        self.notices = []
         self.client = genai.Client(
             api_key=settings.gemini_api_key.get_secret_value(),
             http_options=types.HttpOptions(
@@ -126,42 +207,90 @@ class GoogleProvider:
             ),
         )
 
-    def choose(self, contents, declarations, force):
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM,
-                temperature=0,
-                max_output_tokens=2048,
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-                tools=[types.Tool(function_declarations=declarations)],
-                tool_config=types.ToolConfig(
-                    function_calling_config=types.FunctionCallingConfig(
-                        mode="ANY" if force else "AUTO"
-                    )
-                ),
-            ),
+    def _run_with_fallback(self, call_fn):
+        start_index = (
+            self.models.index(self.active_model) if self.active_model in self.models else 0
         )
-        if not response.candidates or response.candidates[0].content is None:
-            raise ValueError("Gemini returned no usable tool-selection content")
-        content = response.candidates[0].content
-        calls = [p.function_call for p in content.parts or [] if p.function_call]
-        return content, calls
+        trial_models = self.models[start_index:] + self.models[:start_index]
+        last_exc = None
+        for model_name in trial_models:
+            try:
+                result = call_fn(model_name)
+            except errors.APIError as exc:
+                if getattr(exc, "code", None) in {401, 403}:
+                    raise
+                last_exc = exc
+                continue
+            except Exception as exc:
+                last_exc = exc
+                continue
 
-    def interpret(self, prompt):
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM + FINAL_RULES,
-                temperature=0,
-                max_output_tokens=5000,
-                response_mime_type="application/json",
-                response_json_schema=Interpretation.model_json_schema(),
-            ),
-        )
-        return json.loads(response.text or "{}")
+            if model_name != self.active_model:
+                label = "Primary model" if self.active_model == self.primary_model else "Model"
+                notice = f"{label} {self.active_model} failed; fell back to {model_name}."
+                if notice not in self.notices:
+                    self.notices.append(notice)
+                self.active_model = model_name
+                self.model = model_name
+            return result
+        raise last_exc
+
+    def choose(self, contents, declarations, force):
+        def _call(model_name):
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM,
+                    temperature=0,
+                    max_output_tokens=2048,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+                    tools=[types.Tool(function_declarations=declarations)],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode="ANY" if force else "AUTO"
+                        )
+                    ),
+                ),
+            )
+            if not response.candidates:
+                raise ValueError("Gemini returned no usable tool-selection content")
+            content = response.candidates[0].content
+            if content is None:
+                if not force:
+                    return types.Content(role="model", parts=[]), []
+                raise ValueError("Gemini returned no usable tool-selection content")
+            calls = [p.function_call for p in content.parts or [] if p.function_call]
+            if force and not calls:
+                raise ValueError("Gemini did not select a required tool")
+            return content, calls
+
+        return self._run_with_fallback(_call)
+
+    def interpret(self, prompt, evidence=None):
+        def _call(model_name):
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM + FINAL_RULES,
+                    temperature=0,
+                    max_output_tokens=5000,
+                    response_mime_type="application/json",
+                    response_json_schema=Interpretation.model_json_schema(),
+                ),
+            )
+            payload = json.loads(response.text or "{}")
+            Interpretation.model_validate(payload)
+            if evidence is not None:
+                try:
+                    validate_interpretation(payload, evidence)
+                except ValueError:
+                    payload = _sanitize_interpretation_payload(payload, evidence)
+                    validate_interpretation(payload, evidence)
+            return payload
+
+        return self._run_with_fallback(_call)
 
     def close(self):
         self.client.close()
@@ -376,9 +505,12 @@ class AgentService:
             interpretation = None
             if time.monotonic() <= deadline and len(json.dumps(prompt_data)) <= 128000:
                 try:
-                    interpretation = validate_interpretation(
-                        provider.interpret(self.redact(json.dumps(prompt_data))), evidence
-                    )
+                    encoded_prompt = self.redact(json.dumps(prompt_data))
+                    try:
+                        raw_interpretation = provider.interpret(encoded_prompt, evidence)
+                    except TypeError:
+                        raw_interpretation = provider.interpret(encoded_prompt)
+                    interpretation = validate_interpretation(raw_interpretation, evidence)
                 except (ValueError, TypeError):
                     notices.append(
                         "AI interpretation did not pass evidence validation. Only Pyt"
@@ -393,10 +525,18 @@ class AgentService:
                 notices.append(
                     "Interpretation time budget exhausted. Only retrieved evidence is presented."
                 )
+            for provider_notice in getattr(provider, "notices", []):
+                if provider_notice not in notices:
+                    notices.append(provider_notice)
+            used_model = getattr(
+                provider,
+                "active_model",
+                getattr(provider, "model", self.settings.gemini_model),
+            )
             reply = AgentReply(
                 conversation_id=conversation_id,
                 report_id=secrets.token_hex(16),
-                model=self.settings.gemini_model,
+                model=used_model,
                 created_at=datetime.now(UTC).isoformat(),
                 status="interpreted" if interpretation else "evidence_only",
                 interpretation=interpretation,

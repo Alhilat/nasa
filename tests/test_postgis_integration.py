@@ -12,23 +12,65 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event, func, select, text
-from sqlalchemy.exc import DBAPIError
-from sqlalchemy.orm import sessionmaker
-
 from app.db import get_session
 from app.main import app
 from app.models import (
-    DataQualityReport, ImportCheckpoint, Observation, ObservationRecord, ProcessingJob,
-    RawRecord, SourceFile,
+    DataQualityReport,
+    ImportCheckpoint,
+    Observation,
+    ObservationRecord,
+    ProcessingJob,
+    RawRecord,
+    SourceFile,
 )
+from fastapi.testclient import TestClient
 from firescope_pipeline import cli
 from firescope_pipeline.ingest import IngestionRejected
 from firescope_pipeline.selection import Selection
 from firescope_pipeline.service import import_source
+from sqlalchemy import create_engine, event, func, select, text
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import sessionmaker
 
 pytestmark = pytest.mark.integration
+
+
+def test_completeness_uses_persisted_import_scope_and_survives_reimport(audit_factory):
+    from app.completeness import JORDAN_COUNTRY_GEOJSON
+    from app.history import HistoryQuery
+    from app.history_routes import load_history
+
+    factory = audit_factory
+
+    # Synthetic source bytes stay inside this fixture's isolated UUID schema.
+    content = (
+        b"latitude,longitude,acq_date,acq_time,satellite,confidence,frp,version\n"
+        b"31.5,35.8,2023-01-02,0030,T,80,9,6.1\n"
+    )
+    kwargs = dict(
+        filename="synthetic-audit.csv", sensor="MODIS_TERRA", product_version="6.1",
+        processing_level="standard", source_url="https://firms.modaps.eosdis.nasa.gov/",
+        retrieved_at=datetime(2026, 11, 15, tzinfo=UTC),
+        metadata={"request": {"source": "MODIS_SP", "bbox": [34.8, 29, 39.4, 33.5],
+                              "start_date": "2023-01-01", "day_range": 31}},
+    )
+    import_source(factory, content, selection=Selection(
+        start=datetime(2023, 1, 15, tzinfo=UTC)), **kwargs)
+    query = HistoryQuery(start_year=2023, end_year=2023, bbox=None,
+                         polygon=JORDAN_COUNTRY_GEOJSON, sensors=["MODIS_TERRA"])
+    with factory() as session:
+        partial = load_history(session, query)
+    assert partial["monthly"][0]["count"] is None
+    assert partial["monthly"][0]["completeness"] == "unknown"
+
+    import_source(factory, content, selection=Selection(), **kwargs)
+    with factory() as session:
+        complete = load_history(session, query)
+        replay = load_history(session, query)
+    assert complete["monthly"][0]["count"] == 1
+    assert complete["monthly"][0]["completeness"] == "complete"
+    assert complete["analysis_id"] == replay["analysis_id"]
+    assert len(complete["sources"][0]["quality_reports"]) == 2
 
 
 def test_historical_selection_and_export_use_real_postgis(db_client, imported):
@@ -96,6 +138,15 @@ def test_detection_context_counts_distance_and_time_boundaries(factory, imported
 
 @pytest.fixture(scope="module")
 def factory():
+    yield from isolated_database_factory()
+
+
+@pytest.fixture
+def audit_factory():
+    yield from isolated_database_factory()
+
+
+def isolated_database_factory():
     url = os.getenv("TEST_DATABASE_URL")
     if not url:
         pytest.skip("TEST_DATABASE_URL not set; PostGIS integration checks require a database")
@@ -274,7 +325,9 @@ def test_overlapping_exports_link_all_raw_copies_to_one_normalized(factory):
     assert second["report"]["normalized_inserted"] == 0
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(RawRecord).where(
-            RawRecord.source_id.in_([uuid.UUID(first["source_id"]), uuid.UUID(second["source_id"])]),
+            RawRecord.source_id.in_([
+                uuid.UUID(first["source_id"]), uuid.UUID(second["source_id"])
+            ]),
         )) == 3
         observation = session.scalar(select(Observation).where(
             Observation.acquired_at == datetime(2025, 3, 1, 0, 30, tzinfo=UTC),
@@ -312,7 +365,8 @@ def test_quarantine_keeps_invalid_raw_and_strict_failure_has_quality_report(fact
         import_test_content(factory, content)
     with factory() as session:
         assert session.scalar(select(DataQualityReport).join(ProcessingJob).where(
-            ProcessingJob.status == "failed", DataQualityReport.report["invalid_rows"].as_integer() == 1,
+            ProcessingJob.status == "failed",
+            DataQualityReport.report["invalid_rows"].as_integer() == 1,
         ).limit(1)) is not None
     result = import_test_content(factory, content, on_error="quarantine")
     assert result["report"]["invalid_rows"] == 1
@@ -361,6 +415,7 @@ def test_changed_measurement_and_processing_versions_are_not_merged(factory):
 
 def test_calibration_registry_is_versioned_and_immutable(factory, tmp_path):
     import hashlib
+
     from app.models import CalibrationModel
     from firescope_pipeline.calibration.io import register_bundle, write_json
     from firescope_pipeline.calibration.models import fingerprint

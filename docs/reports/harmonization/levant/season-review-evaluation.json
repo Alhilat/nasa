@@ -1,0 +1,2671 @@
+{
+  "both_sensors_missing_bins": 10,
+  "daynight": "D",
+  "evaluations": {
+    "baseline": {
+      "parameter_bootstrap_successes": 0,
+      "splits": {
+        "test_regions": {
+          "bias": 2.627402895918861,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 2.2946393589843046,
+              "mae": 2.2946393589843046,
+              "n": 13,
+              "rmse": 2.7501888224818316
+            },
+            "6.2": {
+              "bias": 2.7669488952785137,
+              "mae": 2.7669488952785137,
+              "n": 31,
+              "rmse": 3.329490821887102
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": 2.627402895918861,
+              "mae": 2.627402895918861,
+              "n": 44,
+              "rmse": 3.1693732689706686
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.15923653914659763,
+              "mae": 0.15923653914659763,
+              "n": 2,
+              "rmse": 0.16785005014193777
+            },
+            "2": {
+              "bias": 1.4980029978976221,
+              "mae": 1.4980029978976221,
+              "n": 9,
+              "rmse": 1.8417671339371822
+            },
+            "3": {
+              "bias": 3.917218863006301,
+              "mae": 3.917218863006301,
+              "n": 20,
+              "rmse": 4.07194673590554
+            },
+            "4": {
+              "bias": 1.8046807769947724,
+              "mae": 1.8046807769947724,
+              "n": 13,
+              "rmse": 2.4772266927466506
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 2.627402895918861,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              2.0457437076837315,
+              3.1305508328216125
+            ],
+            "blocks": 7,
+            "mae": [
+              2.0457437076837315,
+              3.1305508328216125
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              2.566728381915746,
+              3.6466849989781562
+            ]
+          },
+          "n": 44,
+          "rmse": 3.1693732689706686,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "test_years": {
+          "bias": 0.5560021394740285,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.3445713973457073,
+              "mae": 0.3445713973457073,
+              "n": 16,
+              "rmse": 0.44962872067238907
+            },
+            "61.03": {
+              "bias": 0.6143278614404619,
+              "mae": 0.6143278614404619,
+              "n": 58,
+              "rmse": 1.0781271754004202
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": 0.10237304266662894,
+              "mae": 0.10237304266662894,
+              "n": 26,
+              "rmse": 0.12799303614091354
+            },
+            "SYR": {
+              "bias": 0.8017179002447032,
+              "mae": 0.8017179002447032,
+              "n": 48,
+              "rmse": 1.2095582363424102
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.24073780097173014,
+              "mae": 0.24073780097173014,
+              "n": 18,
+              "rmse": 0.30140911581116003
+            },
+            "2": {
+              "bias": 0.7119508393702723,
+              "mae": 0.7119508393702723,
+              "n": 18,
+              "rmse": 1.2896118279454445
+            },
+            "3": {
+              "bias": 0.7946452890055933,
+              "mae": 0.7946452890055933,
+              "n": 17,
+              "rmse": 1.0824674885062409
+            },
+            "4": {
+              "bias": 0.49937108961080867,
+              "mae": 0.49937108961080867,
+              "n": 21,
+              "rmse": 0.9552085754450451
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.5560021394740285,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              0.284140369588988,
+              0.8883030025934331
+            ],
+            "blocks": 4,
+            "mae": [
+              0.284140369588988,
+              0.8883030025934331
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.3726624536131232,
+              1.401451161551538
+            ]
+          },
+          "n": 74,
+          "rmse": 0.9771126228400957,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.2509767257113473,
+            "profile_mae": 0.2509767257113473,
+            "region_years": 5,
+            "years": 4
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.0178109048963402,
+            "mean_slope_error": 0.0178109048963402,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.0178109048963402,
+                "calibrated_slope": 0.008905452448170183,
+                "change_from_source": 0.0,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12
+                ],
+                "reference_slope": 0.02671635734451038,
+                "region_id": "SYR",
+                "slope_error": 0.0178109048963402,
+                "source_slope": 0.008905452448170183,
+                "years": [
+                  2022,
+                  2023,
+                  2024,
+                  2025
+                ]
+              }
+            ]
+          }
+        },
+        "test_years_and_regions": {
+          "bias": 2.5203890927289425,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 1.4685147499075113,
+              "mae": 1.4685147499075113,
+              "n": 6,
+              "rmse": 2.0137342975873382
+            },
+            "61.03": {
+              "bias": 2.7728389350060865,
+              "mae": 2.7728389350060865,
+              "n": 25,
+              "rmse": 3.848066274768673
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": 2.5203890927289425,
+              "mae": 2.5203890927289425,
+              "n": 31,
+              "rmse": 3.5674202584074792
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.45117019424869326,
+              "mae": 0.45117019424869326,
+              "n": 4,
+              "rmse": 0.6212719685108278
+            },
+            "2": {
+              "bias": 1.7440192382722592,
+              "mae": 1.7440192382722592,
+              "n": 7,
+              "rmse": 2.3788393599072437
+            },
+            "3": {
+              "bias": 3.680133349165811,
+              "mae": 3.680133349165811,
+              "n": 12,
+              "rmse": 3.8707546288939336
+            },
+            "4": {
+              "bias": 2.4947057799633625,
+              "mae": 2.4947057799633625,
+              "n": 8,
+              "rmse": 4.65795230225413
+            }
+          },
+          "extrapolation_fraction": 0.03225806451612903,
+          "mae": 2.5203890927289425,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              1.6454442378481755,
+              3.511176746275474
+            ],
+            "blocks": 4,
+            "mae": [
+              1.6454442378481755,
+              3.511176746275474
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              2.2449636068429646,
+              5.041573424062053
+            ]
+          },
+          "n": 31,
+          "rmse": 3.5674202584074792,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 1.370466325340393,
+            "profile_mae": 1.370466325340393,
+            "region_years": 3,
+            "years": 3
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "train": {
+          "bias": 0.8637707539908825,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 1.307794728792874,
+              "mae": 1.3095907470852708,
+              "n": 38,
+              "rmse": 2.858114346110656
+            },
+            "6.2": {
+              "bias": 0.66982924775553,
+              "mae": 0.6706137155154276,
+              "n": 87,
+              "rmse": 1.0596384819408617
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": 0.07618458989144479,
+              "mae": 0.07935894780358832,
+              "n": 43,
+              "rmse": 0.10596920876235466
+            },
+            "SYR": {
+              "bias": 1.2767732546771733,
+              "mae": 1.2767732546771733,
+              "n": 82,
+              "rmse": 2.229565021064546
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.21206540123049983,
+              "mae": 0.2140727157925906,
+              "n": 34,
+              "rmse": 0.30317334984883887
+            },
+            "2": {
+              "bias": 1.1125131079188948,
+              "mae": 1.1125131079188948,
+              "n": 29,
+              "rmse": 1.6694732125227603
+            },
+            "3": {
+              "bias": 1.5532756448234626,
+              "mae": 1.5532756448234626,
+              "n": 29,
+              "rmse": 2.6213190168341565
+            },
+            "4": {
+              "bias": 0.7107044478028777,
+              "mae": 0.7127725900789712,
+              "n": 33,
+              "rmse": 1.9453234675283984
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.8648627331126599,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              0.49342722626407437,
+              1.3994349025277673
+            ],
+            "blocks": 7,
+            "mae": [
+              0.4951054728651666,
+              1.3999809313713065
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.7492382217039116,
+              2.8245437882610807
+            ]
+          },
+          "n": 125,
+          "rmse": 1.8068793039193711,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.4511588310624313,
+            "profile_mae": 0.4511588310624313,
+            "region_years": 11,
+            "years": 7
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.2563173554852697,
+            "mean_slope_error": 0.2563173554852697,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.2563173554852697,
+                "calibrated_slope": 0.30801701200835646,
+                "change_from_source": 0.0,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11
+                ],
+                "reference_slope": 0.05169965652308676,
+                "region_id": "SYR",
+                "slope_error": 0.2563173554852697,
+                "source_slope": 0.30801701200835646,
+                "years": [
+                  2013,
+                  2014,
+                  2015,
+                  2016,
+                  2017,
+                  2018,
+                  2019
+                ]
+              }
+            ]
+          }
+        },
+        "validation": {
+          "bias": 0.87998349142368,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.87998349142368,
+              "mae": 0.87998349142368,
+              "n": 37,
+              "rmse": 1.463290901398591
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": 0.18524645815866186,
+              "mae": 0.18524645815866186,
+              "n": 14,
+              "rmse": 0.23500893718640192
+            },
+            "SYR": {
+              "bias": 1.3028669029763,
+              "mae": 1.3028669029763,
+              "n": 23,
+              "rmse": 1.8468768101203057
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.21390961850379442,
+              "mae": 0.21390961850379442,
+              "n": 8,
+              "rmse": 0.2575990979848958
+            },
+            "2": {
+              "bias": 1.107898590175067,
+              "mae": 1.107898590175067,
+              "n": 11,
+              "rmse": 1.7894230522329202
+            },
+            "3": {
+              "bias": 1.283993470575962,
+              "mae": 1.283993470575962,
+              "n": 10,
+              "rmse": 1.7712929354417717
+            },
+            "4": {
+              "bias": 0.7276616296200569,
+              "mae": 0.7276616296200569,
+              "n": 8,
+              "rmse": 1.2296910814346642
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.87998349142368,
+          "metric_intervals_95": {
+            "available": false,
+            "reason": "fewer_than_three_year_blocks"
+          },
+          "n": 37,
+          "rmse": 1.463290901398591,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        }
+      },
+      "status": "evaluated"
+    },
+    "quantile_mapping": {
+      "parameter_bootstrap_successes": 200,
+      "splits": {
+        "test_regions": {
+          "bias": 0.16529143991301556,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.15481537651007582,
+              "mae": 0.2920788518375436,
+              "n": 13,
+              "rmse": 0.3624802311152374
+            },
+            "6.2": {
+              "bias": 0.16968462779166768,
+              "mae": 0.314860046065736,
+              "n": 31,
+              "rmse": 0.4132696054732764
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": 0.16529143991301556,
+              "mae": 0.3081292386801337,
+              "n": 44,
+              "rmse": 0.39893721607856786
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": -0.0614309033990912,
+              "mae": 0.0614309033990912,
+              "n": 2,
+              "rmse": 0.061440899271690455
+            },
+            "2": {
+              "bias": 0.1393405520119335,
+              "mae": 0.1492707120225889,
+              "n": 9,
+              "rmse": 0.24014403589493122
+            },
+            "3": {
+              "bias": 0.4427879264004277,
+              "mae": 0.4522935666730265,
+              "n": 20,
+              "rmse": 0.4915895740126409
+            },
+            "4": {
+              "bias": -0.20877987178039145,
+              "mae": 0.2342705348818361,
+              "n": 13,
+              "rmse": 0.35549111520244475
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.3081292386801337,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              0.11935652560475651,
+              0.23131866930786557
+            ],
+            "blocks": 7,
+            "mae": [
+              0.21499929874697787,
+              0.4087527527312665
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.29777074566161943,
+              0.4968637364099923
+            ]
+          },
+          "n": 44,
+          "rmse": 0.39893721607856786,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "test_years": {
+          "bias": 0.011525058141029878,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.007975992323887309,
+              "mae": 0.017799833117122736,
+              "n": 16,
+              "rmse": 0.021955295562231858
+            },
+            "61.03": {
+              "bias": 0.012504110780241624,
+              "mae": 0.05638213356054644,
+              "n": 58,
+              "rmse": 0.10534012259684955
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": -0.0021303748939324537,
+              "mae": 0.012506786180839228,
+              "n": 26,
+              "rmse": 0.018229488625924252
+            },
+            "SYR": {
+              "bias": 0.018921751034967804,
+              "mae": 0.06728717991007993,
+              "n": 48,
+              "rmse": 0.11571082780944777
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": -0.0018409891868170953,
+              "mae": 0.03274234734787982,
+              "n": 18,
+              "rmse": 0.06066681794846267
+            },
+            "2": {
+              "bias": 0.010376039394245556,
+              "mae": 0.05934817270121732,
+              "n": 18,
+              "rmse": 0.12262467406662346
+            },
+            "3": {
+              "bias": 0.00962112199843819,
+              "mae": 0.062202786040176636,
+              "n": 17,
+              "rmse": 0.10770242943951579
+            },
+            "4": {
+              "bias": 0.025507824987097593,
+              "mae": 0.03999449299137646,
+              "n": 21,
+              "rmse": 0.07470711506769258
+            }
+          },
+          "extrapolation_fraction": 0.013513513513513514,
+          "mae": 0.04804001454575213,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.012283530318461385,
+              0.05259766394444185
+            ],
+            "blocks": 4,
+            "mae": [
+              0.030684608552881985,
+              0.07376584251797835
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.05554036406839352,
+              0.13970167305299977
+            ]
+          },
+          "n": 74,
+          "rmse": 0.09381637923303263,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.2509767257113473,
+            "profile_mae": 0.02656278094040464,
+            "region_years": 5,
+            "years": 4
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.0178109048963402,
+            "mean_slope_error": 0.02129142487576273,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.0178109048963402,
+                "calibrated_slope": 0.005424932468747654,
+                "change_from_source": -0.003480519979422529,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12
+                ],
+                "reference_slope": 0.02671635734451038,
+                "region_id": "SYR",
+                "slope_error": 0.02129142487576273,
+                "source_slope": 0.008905452448170183,
+                "years": [
+                  2022,
+                  2023,
+                  2024,
+                  2025
+                ]
+              }
+            ]
+          }
+        },
+        "test_years_and_regions": {
+          "bias": -0.10637708853540571,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.08540679488738206,
+              "mae": 0.14513857676919928,
+              "n": 6,
+              "rmse": 0.1795788486099915
+            },
+            "61.03": {
+              "bias": -0.1524052205568748,
+              "mae": 0.4894505676637744,
+              "n": 25,
+              "rmse": 1.11045846470286
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": -0.10637708853540571,
+              "mae": 0.42280953716805014,
+              "n": 31,
+              "rmse": 1.0003457696243343
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.011474657017664262,
+              "mae": 0.08219228391689586,
+              "n": 4,
+              "rmse": 0.09585379195991196
+            },
+            "2": {
+              "bias": 0.12064181978203413,
+              "mae": 0.16539756427738153,
+              "n": 7,
+              "rmse": 0.2550918305880351
+            },
+            "3": {
+              "bias": 0.17188335190947882,
+              "mae": 0.44748851937867334,
+              "n": 12,
+              "rmse": 0.5488909333026674
+            },
+            "4": {
+              "bias": -0.7813351667570274,
+              "mae": 0.7813351667570274,
+              "n": 8,
+              "rmse": 1.8341827761655944
+            }
+          },
+          "extrapolation_fraction": 0.06451612903225806,
+          "mae": 0.42280953716805014,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.5555611865174669,
+              0.16904191410182476
+            ],
+            "blocks": 4,
+            "mae": [
+              0.17968167889527134,
+              0.7809118230550945
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.24706384863043557,
+              1.6539660353116181
+            ]
+          },
+          "n": 31,
+          "rmse": 1.0003457696243343,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 1.370466325340393,
+            "profile_mae": 0.45133423224675157,
+            "region_years": 3,
+            "years": 3
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "train": {
+          "bias": 0.00022989319842094136,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.0031626121472797114,
+              "mae": 0.01622714788075378,
+              "n": 38,
+              "rmse": 0.022893976750213565
+            },
+            "6.2": {
+              "bias": -0.0010510645033794412,
+              "mae": 0.02402545437033407,
+              "n": 87,
+              "rmse": 0.03990115757582838
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": -0.0071984483060956945,
+              "mae": 0.011975287309058514,
+              "n": 43,
+              "rmse": 0.01890945616414342
+            },
+            "SYR": {
+              "bias": 0.00412524301176503,
+              "mae": 0.02673059506583161,
+              "n": 82,
+              "rmse": 0.041768029745453496
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": -0.00010425133122970712,
+              "mae": 0.022257546203993672,
+              "n": 34,
+              "rmse": 0.040204261318749844
+            },
+            "2": {
+              "bias": 0.001799542446544434,
+              "mae": 0.013176852950521345,
+              "n": 29,
+              "rmse": 0.01972503209468011
+            },
+            "3": {
+              "bias": -0.0006259062468816022,
+              "mae": 0.023180429322334117,
+              "n": 29,
+              "rmse": 0.03452820340786576
+            },
+            "4": {
+              "bias": -5.315923411498204e-05,
+              "mae": 0.02714328463148831,
+              "n": 33,
+              "rmse": 0.04178446062080443
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.02165476919750166,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.004795954729098346,
+              0.004276255013913737
+            ],
+            "blocks": 7,
+            "mae": [
+              0.01703455152717435,
+              0.026581600616609892
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.026770444199000674,
+              0.04275740540425749
+            ]
+          },
+          "n": 125,
+          "rmse": 0.03560112416396074,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.4511588310624313,
+            "profile_mae": 0.013206212065405482,
+            "region_years": 11,
+            "years": 7
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.2563173554852697,
+            "mean_slope_error": 0.0006993414785387911,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.2563173554852697,
+                "calibrated_slope": 0.05100031504454797,
+                "change_from_source": -0.25701669696380847,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11
+                ],
+                "reference_slope": 0.05169965652308676,
+                "region_id": "SYR",
+                "slope_error": 0.0006993414785387911,
+                "source_slope": 0.30801701200835646,
+                "years": [
+                  2013,
+                  2014,
+                  2015,
+                  2016,
+                  2017,
+                  2018,
+                  2019
+                ]
+              }
+            ]
+          }
+        },
+        "validation": {
+          "bias": 0.03997443283399966,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.03997443283399966,
+              "mae": 0.04815282459616614,
+              "n": 37,
+              "rmse": 0.08741972445888606
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": 0.004901994014763418,
+              "mae": 0.01638830727040787,
+              "n": 14,
+              "rmse": 0.0236606605649872
+            },
+            "SYR": {
+              "bias": 0.06132287385440434,
+              "mae": 0.06748774818575815,
+              "n": 23,
+              "rmse": 0.1093307960688467
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.010912863221005197,
+              "mae": 0.017476731928551884,
+              "n": 8,
+              "rmse": 0.02183603714016446
+            },
+            "2": {
+              "bias": 0.03110569091050626,
+              "mae": 0.050754306024564926,
+              "n": 11,
+              "rmse": 0.07011942729764908
+            },
+            "3": {
+              "bias": 0.09011113663503076,
+              "mae": 0.09011113663503076,
+              "n": 10,
+              "rmse": 0.14806892039641403
+            },
+            "4": {
+              "bias": 0.018559642840508664,
+              "mae": 0.022803990251151318,
+              "n": 8,
+              "rmse": 0.02650254081630071
+            }
+          },
+          "extrapolation_fraction": 0.02702702702702703,
+          "mae": 0.04815282459616614,
+          "metric_intervals_95": {
+            "available": false,
+            "reason": "fewer_than_three_year_blocks"
+          },
+          "n": 37,
+          "rmse": 0.08741972445888606,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        }
+      },
+      "status": "evaluated",
+      "validation_qualified": true,
+      "validation_rejection_reasons": []
+    },
+    "regression": {
+      "parameter_bootstrap_successes": 200,
+      "splits": {
+        "test_regions": {
+          "bias": 0.11613058083913881,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.1185520601092464,
+              "mae": 0.24264319047703198,
+              "n": 13,
+              "rmse": 0.27422477571245557
+            },
+            "6.2": {
+              "bias": 0.115115121790384,
+              "mae": 0.2368734773453722,
+              "n": 31,
+              "rmse": 0.3171336279986047
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": 0.11613058083913881,
+              "mae": 0.23857816531608983,
+              "n": 44,
+              "rmse": 0.3050847809597501
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": -0.07437827457384466,
+              "mae": 0.07437827457384466,
+              "n": 2,
+              "rmse": 0.07626374678273007
+            },
+            "2": {
+              "bias": 0.16519788148066242,
+              "mae": 0.16792773706185823,
+              "n": 9,
+              "rmse": 0.21143388331332347
+            },
+            "3": {
+              "bias": 0.2771895205179085,
+              "mae": 0.298789198287888,
+              "n": 20,
+              "rmse": 0.35073101487695313
+            },
+            "4": {
+              "bias": -0.13631301827802578,
+              "mae": 0.22011916349582922,
+              "n": 13,
+              "rmse": 0.30648880516985433
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.23857816531608983,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              0.07764910335294205,
+              0.16528698659956428
+            ],
+            "blocks": 7,
+            "mae": [
+              0.17849351012484646,
+              0.3097767722276321
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.23042249292036257,
+              0.381875933566947
+            ]
+          },
+          "n": 44,
+          "rmse": 0.3050847809597501,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "test_years": {
+          "bias": 0.022328410586239775,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.02563841586753746,
+              "mae": 0.036293793833767685,
+              "n": 16,
+              "rmse": 0.04903044288780769
+            },
+            "61.03": {
+              "bias": 0.02141530568105421,
+              "mae": 0.061615803413334204,
+              "n": 58,
+              "rmse": 0.10459714836976783
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": -0.020067461535321744,
+              "mae": 0.021013037109232306,
+              "n": 26,
+              "rmse": 0.025068605633476276
+            },
+            "SYR": {
+              "bias": 0.04529284131875227,
+              "mae": 0.07516829863486724,
+              "n": 48,
+              "rmse": 0.11696483797749471
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.004644792781381246,
+              "mae": 0.038539375036555544,
+              "n": 18,
+              "rmse": 0.05646311288182245
+            },
+            "2": {
+              "bias": 0.008798584570985155,
+              "mae": 0.06698912240377092,
+              "n": 18,
+              "rmse": 0.10829301000430329
+            },
+            "3": {
+              "bias": 0.03757575505651484,
+              "mae": 0.06820623754334049,
+              "n": 17,
+              "rmse": 0.09899655504245079
+            },
+            "4": {
+              "bias": 0.03673970262278076,
+              "mae": 0.05216182415004773,
+              "n": 21,
+              "rmse": 0.1064430901725369
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.05614077431504955,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.010458194252954247,
+              0.06617797809192572
+            ],
+            "blocks": 4,
+            "mae": [
+              0.0348786803579402,
+              0.08348613407504016
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.05041438157734508,
+              0.13310123233393728
+            ]
+          },
+          "n": 74,
+          "rmse": 0.09536674793087743,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.2509767257113473,
+            "profile_mae": 0.0308300364153772,
+            "region_years": 5,
+            "years": 4
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.0178109048963402,
+            "mean_slope_error": 0.0234451033218853,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.0178109048963402,
+                "calibrated_slope": 0.003271254022625079,
+                "change_from_source": -0.005634198425545104,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12
+                ],
+                "reference_slope": 0.02671635734451038,
+                "region_id": "SYR",
+                "slope_error": 0.0234451033218853,
+                "source_slope": 0.008905452448170183,
+                "years": [
+                  2022,
+                  2023,
+                  2024,
+                  2025
+                ]
+              }
+            ]
+          }
+        },
+        "test_years_and_regions": {
+          "bias": -0.12952072856578578,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.04515842887612261,
+              "mae": 0.1100227546559694,
+              "n": 6,
+              "rmse": 0.14088240310694058
+            },
+            "61.03": {
+              "bias": -0.1714437263518438,
+              "mae": 0.45451724462886267,
+              "n": 25,
+              "rmse": 1.0434640870447212
+            }
+          },
+          "by_region": {
+            "LBN": {
+              "bias": -0.12952072856578578,
+              "mae": 0.3878408917308834,
+              "n": 31,
+              "rmse": 0.939105951507018
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.04123344594828353,
+              "mae": 0.10899914865019435,
+              "n": 4,
+              "rmse": 0.12020067249720595
+            },
+            "2": {
+              "bias": 0.13207358795906796,
+              "mae": 0.17311857617438062,
+              "n": 7,
+              "rmse": 0.22503113789855797
+            },
+            "3": {
+              "bias": 0.020877604520602222,
+              "mae": 0.41543890201001127,
+              "n": 12,
+              "rmse": 0.5926834635269059
+            },
+            "4": {
+              "bias": -0.6693903424116494,
+              "mae": 0.6737467739644759,
+              "n": 8,
+              "rmse": 1.6849321009958904
+            }
+          },
+          "extrapolation_fraction": 0.03225806451612903,
+          "mae": 0.3878408917308834,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.5766503200019966,
+              0.15616859796837906
+            ],
+            "blocks": 4,
+            "mae": [
+              0.15465995790781392,
+              0.7439739517414166
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.21598380860724983,
+              1.5591855852397185
+            ]
+          },
+          "n": 31,
+          "rmse": 0.939105951507018,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 1.370466325340393,
+            "profile_mae": 0.353972401257423,
+            "region_years": 3,
+            "years": 3
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        },
+        "train": {
+          "bias": 0.0029098281234455777,
+          "by_reference_product": {
+            "6.03": {
+              "bias": -0.03100387721856815,
+              "mae": 0.07133310453653502,
+              "n": 38,
+              "rmse": 0.12790057681819617
+            },
+            "6.2": {
+              "bias": 0.017722710916509045,
+              "mae": 0.04722814480144617,
+              "n": 87,
+              "rmse": 0.06452276188217619
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": -0.01876156318894755,
+              "mae": 0.02087039821379345,
+              "n": 43,
+              "rmse": 0.025896341733129876
+            },
+            "SYR": {
+              "bias": 0.01427409429945661,
+              "mae": 0.07222048106001255,
+              "n": 82,
+              "rmse": 0.10791741176242402
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.006370952400144141,
+              "mae": 0.02932600381254149,
+              "n": 34,
+              "rmse": 0.03966441762505721
+            },
+            "2": {
+              "bias": 0.0024906259624085467,
+              "mae": 0.07175413563105044,
+              "n": 29,
+              "rmse": 0.11247559229160137
+            },
+            "3": {
+              "bias": -0.004478870923181674,
+              "mae": 0.08210816198944654,
+              "n": 29,
+              "rmse": 0.12570924172986972
+            },
+            "4": {
+              "bias": 0.006205310232976276,
+              "mae": 0.041224721499797716,
+              "n": 33,
+              "rmse": 0.05645534478682663
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.05455605256091318,
+          "metric_intervals_95": {
+            "available": true,
+            "bias": [
+              -0.02813788541572688,
+              0.0239140782088644
+            ],
+            "blocks": 7,
+            "mae": [
+              0.042330189656525706,
+              0.07246116053347988
+            ],
+            "method": "heldout_year_block_bootstrap_fixed_model",
+            "repeats": 200,
+            "rmse": [
+              0.05865942731959791,
+              0.12524905592286545
+            ]
+          },
+          "n": 125,
+          "rmse": 0.08871628660375212,
+          "seasonal_profile": {
+            "available": true,
+            "baseline_profile_mae": 0.4511588310624313,
+            "profile_mae": 0.03832698132697161,
+            "region_years": 11,
+            "years": 7
+          },
+          "trend": {
+            "available": true,
+            "mean_baseline_slope_error": 0.2563173554852697,
+            "mean_slope_error": 0.01775391446987149,
+            "reason": null,
+            "regions": [
+              {
+                "baseline_slope_error": 0.2563173554852697,
+                "calibrated_slope": 0.033945742053215266,
+                "change_from_source": -0.2740712699551412,
+                "common_months": [
+                  1,
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11
+                ],
+                "reference_slope": 0.05169965652308676,
+                "region_id": "SYR",
+                "slope_error": 0.01775391446987149,
+                "source_slope": 0.30801701200835646,
+                "years": [
+                  2013,
+                  2014,
+                  2015,
+                  2016,
+                  2017,
+                  2018,
+                  2019
+                ]
+              }
+            ]
+          }
+        },
+        "validation": {
+          "bias": 0.037076696497555225,
+          "by_reference_product": {
+            "6.03": {
+              "bias": 0.037076696497555225,
+              "mae": 0.05904492768977079,
+              "n": 37,
+              "rmse": 0.08695036388598076
+            }
+          },
+          "by_region": {
+            "JOR": {
+              "bias": -0.0049309104403817096,
+              "mae": 0.01918695526072498,
+              "n": 14,
+              "rmse": 0.02767392442135913
+            },
+            "SYR": {
+              "bias": 0.06264654419890815,
+              "mae": 0.08330630221179872,
+              "n": 23,
+              "rmse": 0.10814878812084242
+            }
+          },
+          "by_season": {
+            "1": {
+              "bias": 0.02340634922517384,
+              "mae": 0.030944561654083713,
+              "n": 8,
+              "rmse": 0.040063451253568534
+            },
+            "2": {
+              "bias": 0.01287214292033661,
+              "mae": 0.0612242538166362,
+              "n": 11,
+              "rmse": 0.0911452842891473
+            },
+            "3": {
+              "bias": 0.06861533970361519,
+              "mae": 0.08671318198369513,
+              "n": 10,
+              "rmse": 0.12001486150953009
+            },
+            "4": {
+              "bias": 0.044605000931037225,
+              "mae": 0.04956340243361258,
+              "n": 8,
+              "rmse": 0.06272472766434269
+            }
+          },
+          "extrapolation_fraction": 0.0,
+          "mae": 0.05904492768977079,
+          "metric_intervals_95": {
+            "available": false,
+            "reason": "fewer_than_three_year_blocks"
+          },
+          "n": 37,
+          "rmse": 0.08695036388598076,
+          "seasonal_profile": {
+            "available": false,
+            "reason": "insufficient_complete_seasons_or_years"
+          },
+          "trend": {
+            "available": false,
+            "mean_baseline_slope_error": null,
+            "mean_slope_error": null,
+            "reason": "insufficient_years_or_common_calendar_months",
+            "regions": []
+          }
+        }
+      },
+      "status": "evaluated",
+      "validation_qualified": true,
+      "validation_rejection_reasons": []
+    }
+  },
+  "interpretation": "Agreement to a sensor reference, not validation against physical fire truth",
+  "limitations_or_rejection_reasons": [
+    "test_years:trend_error_worsened",
+    "test_regions:trend_not_estimable",
+    "test_regions:seasonal_profile_not_estimable",
+    "test_years_and_regions:trend_not_estimable",
+    "observability_unknown_conditional_detection_comparison_only",
+    "metric_is_detection_only_proxy",
+    "native_product_transition_evaluation_only"
+  ],
+  "metric": "reported_cell_days_per_1000km2_month",
+  "models": {
+    "baseline": {
+      "algorithm_version": "sensor-calibration-v1",
+      "bounded_occupancy": false,
+      "context": {
+        "code_sha256": "c7782df9cbfd6f0ae2ea2c171762567a900007754ee531a9ffcecd0791cdd3f8",
+        "daynight": "D",
+        "grid_size_m": 5000,
+        "native_product_versions": {
+          "MODIS_AQUA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "MODIS_TERRA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "VIIRS_SNPP": [
+            "2"
+          ]
+        },
+        "reference": "MODIS_AQUA",
+        "region_geometry_sha256": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+        "source": "VIIRS_SNPP"
+      },
+      "method": "baseline",
+      "metric": "reported_cell_days_per_1000km2_month",
+      "model_version": "39ab3b39f95755e6dd70b4c99a5c0f09c7acd35b427b8c560ebf788f7eff0568",
+      "parameters": {},
+      "source_range": [
+        0.011374782518514327,
+        12.8347561610158
+      ],
+      "training_hash": "7888af416be6f868548f2b851b1d81dc6415334687625cbe8532b59ecb34562e",
+      "training_pairs": 125,
+      "training_regions": [
+        "JOR",
+        "SYR"
+      ],
+      "training_years": [
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ]
+    },
+    "quantile_mapping": {
+      "algorithm_version": "sensor-calibration-v1",
+      "bounded_occupancy": false,
+      "context": {
+        "code_sha256": "c7782df9cbfd6f0ae2ea2c171762567a900007754ee531a9ffcecd0791cdd3f8",
+        "daynight": "D",
+        "grid_size_m": 5000,
+        "native_product_versions": {
+          "MODIS_AQUA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "MODIS_TERRA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "VIIRS_SNPP": [
+            "2"
+          ]
+        },
+        "reference": "MODIS_AQUA",
+        "region_geometry_sha256": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+        "source": "VIIRS_SNPP"
+      },
+      "method": "quantile_mapping",
+      "metric": "reported_cell_days_per_1000km2_month",
+      "model_version": "4e819bd0ecaf713474d95e66aeb3a7a75ae8e40b7b256590fa488b608e6edfdc",
+      "parameters": {
+        "global": {
+          "n": 125,
+          "x": [
+            0.011374782518514327,
+            0.022749565037028654,
+            0.030939408450358967,
+            0.03412434755554298,
+            0.036399304059245845,
+            0.04549913007405731,
+            0.0473190952770196,
+            0.05687391259257163,
+            0.0641537734044208,
+            0.06824869511108596,
+            0.07234361681775114,
+            0.07962347762960029,
+            0.08917829494515232,
+            0.09099826014811462,
+            0.10009808616292608,
+            0.10237304266662893,
+            0.1058431658642488,
+            0.11261947270267822,
+            0.11374782518514326,
+            0.13085562780984672,
+            0.13356367376776285,
+            0.13649739022217192,
+            0.14741718143994567,
+            0.14883071801484654,
+            0.1555610038164814,
+            0.15924695525920057,
+            0.1632237284020598,
+            0.18025769336776964,
+            0.18199652029622923,
+            0.19114015000409537,
+            0.21067756077385327,
+            0.21305805191029348,
+            0.2161208678517722,
+            0.2205753656458018,
+            0.23728487176185548,
+            0.24665555780605194,
+            0.261649200387866,
+            0.2830843414953018,
+            0.30423933465789366,
+            0.3273571622376332,
+            0.3371713343233717,
+            0.3489483408262579,
+            0.3613796254681933,
+            0.36530529430248876,
+            0.37186406276383677,
+            0.37577203439529433,
+            0.3762099299533093,
+            0.38667838017809714,
+            0.42091893612167364,
+            0.4348768697547242,
+            0.447090061683643,
+            0.4671545912811529,
+            0.5142626172926976,
+            0.5321462197600432,
+            0.545231782541028,
+            0.5596259016001112,
+            0.5825256364668352,
+            0.7458770785161263,
+            0.7731386676431778,
+            0.7842613960070147,
+            0.7903679919714741,
+            0.8540510641722663,
+            0.8706261103615136,
+            0.8952705869323683,
+            0.9066114080092211,
+            0.9524108777426677,
+            0.9816353012868668,
+            1.028307141872379,
+            1.0468450224787738,
+            1.0632019759550047,
+            1.0789046512921865,
+            1.1587265842561927,
+            1.2773690201371213,
+            1.3707127013081448,
+            1.5074568323694355,
+            1.659467453341874,
+            1.7115916117527954,
+            1.760880564894504,
+            1.8625117691601503,
+            2.0156128536976725,
+            2.082349223880694,
+            2.1338191041525674,
+            2.1619530641316844,
+            2.425190968742496,
+            2.8179759448850503,
+            2.931384155653583,
+            3.1038954916495642,
+            3.8576239078342844,
+            4.726069091065635,
+            5.651436472394263,
+            5.754594325651026,
+            5.84488470883982,
+            10.2124093797065,
+            12.8347561610158
+          ],
+          "y": [
+            0.00545231782541028,
+            0.011017470899067065,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.011374782518514327,
+            0.014829087715864447,
+            0.02071880773655907,
+            0.021940912424595373,
+            0.022749565037028654,
+            0.022749565037028654,
+            0.022749565037028654,
+            0.022749565037028654,
+            0.022749565037028654,
+            0.022749565037028654,
+            0.027081108163450496,
+            0.027261589127051403,
+            0.029660608970231914,
+            0.03271390695246168,
+            0.03401151230729648,
+            0.03412434755554298,
+            0.03412434755554298,
+            0.03412434755554298,
+            0.03412434755554298,
+            0.03412434755554298,
+            0.03412434755554298,
+            0.03654947388894037,
+            0.042746171751216616,
+            0.04361854260328224,
+            0.04422033059393026,
+            0.04549913007405731,
+            0.04549913007405731,
+            0.04586009200125912,
+            0.05452317825410281,
+            0.05452317825410281,
+            0.05452317825410281,
+            0.05687391259257163,
+            0.05997549607951309,
+            0.05997549607951309,
+            0.06390116491380848,
+            0.06542781390492336,
+            0.0687749824349355,
+            0.07088013173033364,
+            0.07088013173033364,
+            0.07589626412971111,
+            0.0799692839898489,
+            0.0817847673811542,
+            0.08527425078941678,
+            0.09203512489292551,
+            0.09268940303197476,
+            0.09465223744912246,
+            0.09814172085738504,
+            0.1027216678307297,
+            0.10948254193423843,
+            0.1144986743336159,
+            0.11755197231584566,
+            0.12867470067968273,
+            0.13085562780984672,
+            0.13085562780984672,
+            0.13652603834827337,
+            0.1624790711972265,
+            0.16902185258771868,
+            0.19344823644555667,
+            0.20696998465257427,
+            0.21656606402529632,
+            0.22332693812880514,
+            0.23663059362280622,
+            0.24535430214346263,
+            0.24906187826474163,
+            0.2558227523682504,
+            0.2671635734451037,
+            0.27152542770543187,
+            0.2780682090959243,
+            0.2828662487822853,
+            0.33106473835891237,
+            0.39125832715144165,
+            0.47653257794085896,
+            0.5923398085525732,
+            0.649698192075889,
+            0.6841568407324825,
+            0.7696491842349152,
+            0.9530651558817193,
+            1.0097692612659825,
+            1.1988556434512125,
+            1.3379987943556824,
+            1.4939350841624175,
+            1.8919542854173672
+          ]
+        },
+        "quantile_method": "linear",
+        "seasons": {
+          "1": {
+            "n": 34,
+            "x": [
+              0.011374782518514327,
+              0.015128460749624055,
+              0.018882138980733782,
+              0.02263581721184351,
+              0.02638949544295324,
+              0.030143173674062967,
+              0.03389685190517269,
+              0.03412434755554298,
+              0.03753678231109728,
+              0.041290460542207,
+              0.045044138773316734,
+              0.04549913007405731,
+              0.04857032135405618,
+              0.052323999585165905,
+              0.05607767781627562,
+              0.05687391259257163,
+              0.05971760822220021,
+              0.06347128645330995,
+              0.06722496468441967,
+              0.06824869511108596,
+              0.07086489509034426,
+              0.07461857332145398,
+              0.07837225155256372,
+              0.08212592978367345,
+              0.08587960801478317,
+              0.08963328624589288,
+              0.09936830735707831,
+              0.11252123868544998,
+              0.12567417001382158,
+              0.13085562780984672,
+              0.13499938935715852,
+              0.1421964488867001,
+              0.14939350841624166,
+              0.15757198515435714,
+              0.1665683095662841,
+              0.175564633978211,
+              0.18270717032949846,
+              0.18810496497665466,
+              0.19350275962381086,
+              0.2006452959750983,
+              0.20964162038702533,
+              0.21863794479895227,
+              0.22599857386325617,
+              0.23139636851041231,
+              0.23679416315756852,
+              0.24295528230028204,
+              0.25015234182982365,
+              0.25734940135936524,
+              0.2702168714273334,
+              0.2918080500159582,
+              0.31339922860458286,
+              0.32975618208081375,
+              0.3369532416103553,
+              0.3441503011398969,
+              0.3519471156302337,
+              0.36094344004216056,
+              0.3699397644540876,
+              0.3762099299533093,
+              0.3771913471618832,
+              0.38078987692665395,
+              0.3843884066914247,
+              0.3897316781603269,
+              0.4005272674546392,
+              0.4113228567489516,
+              0.4217367837954852,
+              0.4307331082074122,
+              0.4397294326193391,
+              0.447090061683643,
+              0.45199714772651234,
+              0.4843839156094492,
+              0.5167706834923864,
+              0.5539554910616843,
+              0.6259260863571003,
+              0.6978966816525157,
+              0.7659416081136362,
+              0.7947298462318027,
+              0.8235180843499688,
+              0.8507796734770201,
+              0.8543782032417909,
+              0.8579767330065616,
+              0.8632654812972093,
+              0.9226412224159269,
+              0.9820169635346458,
+              1.0413927046533635
+            ],
+            "y": [
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.012719968677097787,
+              0.014364085093144238,
+              0.016008201509190682,
+              0.01957382099322291,
+              0.02180927130164112,
+              0.02180927130164112,
+              0.02180927130164112,
+              0.02234523873081201,
+              0.023787330577733887,
+              0.025276298527441395,
+              0.026765266477148903,
+              0.027261589127051403,
+              0.027261589127051403,
+              0.027261589127051403,
+              0.027261589127051403,
+              0.027261589127051403,
+              0.027261589127051403,
+              0.03015131757451885,
+              0.03271390695246168,
+              0.03271390695246168,
+              0.03271390695246168,
+              0.03296778626101632,
+              0.03343323166003315,
+              0.03389867705904997,
+              0.035738360713658636,
+              0.038871445079412606,
+              0.04200452944516658,
+              0.04361854260328224,
+              0.04361854260328224,
+              0.04361854260328224,
+              0.04390063072389851,
+              0.044521224589254275,
+              0.04514181845461005,
+              0.04549913007405731,
+              0.04549913007405731,
+              0.04549913007405731,
+              0.04549913007405731,
+              0.04549913007405731,
+              0.04549913007405731,
+              0.046582015855662774,
+              0.049559951755077776,
+              0.052537887654492806,
+              0.05452317825410281,
+              0.05452317825410281,
+              0.05452317825410281,
+              0.06042515050260556,
+              0.06897623301110517,
+              0.07164387197784229,
+              0.07431151094457943,
+              0.07807719125987525,
+              0.08527425078941678,
+              0.09247131031895839,
+              0.09966836984849993,
+              0.10686542937804154,
+              0.11406248890758308,
+              0.12420380006284619,
+              0.13085562780984672,
+              0.13085562780984672,
+              0.13085562780984672,
+              0.13085562780984672,
+              0.13085562780984672,
+              0.13085562780984672,
+              0.13330917083128144,
+              0.16029814406706247,
+              0.18728711730284323,
+              0.21329467333005026,
+              0.22409026262436257,
+              0.23488585191867487,
+              0.245572394856479,
+              0.2527694543860205,
+              0.2599665139155622,
+              0.2671635734451037
+            ]
+          },
+          "2": {
+            "n": 29,
+            "x": [
+              0.022749565037028654,
+              0.04185919966813272,
+              0.0609688342992368,
+              0.08007846893034086,
+              0.09099826014811462,
+              0.09372820795255805,
+              0.09691314705774207,
+              0.10009808616292606,
+              0.10328302526811008,
+              0.10646796437329409,
+              0.1096529034784781,
+              0.11283784258366211,
+              0.12284765119995474,
+              0.1355874076206908,
+              0.14832716404142685,
+              0.16152191176290345,
+              0.1774466072888235,
+              0.19337130281474357,
+              0.2092959983406636,
+              0.2161208678517722,
+              0.22886062427250825,
+              0.24160038069324433,
+              0.2543401371139804,
+              0.2701365646567332,
+              0.29000855369550854,
+              0.30988054273428384,
+              0.32975253177305924,
+              0.3365170561843225,
+              0.3410970031576671,
+              0.34567695013101174,
+              0.35025689710435637,
+              0.354836844077701,
+              0.3594167910510457,
+              0.3639967380243903,
+              0.3947478105597044,
+              0.4359673333198061,
+              0.4771868560799077,
+              0.5144807100057139,
+              0.5282205509257479,
+              0.5419603918457818,
+              0.5557002327658158,
+              0.5615887360172589,
+              0.6104415037329352,
+              0.6592942714486112,
+              0.7081470391642872,
+              0.753074138045668,
+              0.792767011814655,
+              0.8324598855836418,
+              0.8721527593526286,
+              0.9183884145121073,
+              0.9657145332366688,
+              1.01304065196123,
+              1.0878464525258582,
+              1.2313514576906575,
+              1.3748564628554565,
+              1.5183614680202557,
+              1.5888054143245556,
+              1.6300249370846576,
+              1.6712444598447593,
+              1.7067935720664342,
+              1.708320221057549,
+              1.709846870048664,
+              1.7113735190397787,
+              1.753901598077979,
+              1.8271807496514925,
+              1.900459901225007,
+              1.9737390527985215,
+              1.9920588406919,
+              2.0103786285852787,
+              2.0286984164786572,
+              2.0568323764577743,
+              2.098051899217876,
+              2.1392714219779774,
+              2.1804909447380796,
+              2.3486404264737337,
+              2.537944901371977,
+              2.727249376270223,
+              2.8829675733639397,
+              2.954720075946339,
+              3.0264725785287387,
+              3.098225081111138,
+              3.382617978884537,
+              3.7520670347343392,
+              4.121516090584142,
+              4.486603292173615,
+              4.825519368201115,
+              5.164435444228619,
+              5.503351520256119,
+              5.659942088201904,
+              5.679788525086397,
+              5.699634961970891,
+              5.719481398855384
+            ],
+            "y": [
+              0.01090463565082056,
+              0.01090463565082056,
+              0.01090463565082056,
+              0.01090463565082056,
+              0.011158514959375193,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.014264441673989905,
+              0.01814688471325423,
+              0.019936815950277617,
+              0.02172674718730101,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.025479512841472096,
+              0.02866445194665612,
+              0.03184939105184012,
+              0.035034330157024125,
+              0.03821926926220813,
+              0.041404208367392156,
+              0.04458914747257616,
+              0.050575330405312605,
+              0.05768201086906996,
+              0.06478869133282732,
+              0.07131631715636645,
+              0.07436961513859622,
+              0.07742291312082597,
+              0.08047621110305574,
+              0.08810945605863012,
+              0.09268940303197476,
+              0.09268940303197476,
+              0.09268940303197476,
+              0.09530651558817171,
+              0.10141311155263126,
+              0.10751970751709077,
+              0.11362630348155027,
+              0.12104145572410818,
+              0.1286747006796826,
+              0.13630794563525703,
+              0.1491754157032251,
+              0.17512844855217816,
+              0.2010814814011312,
+              0.22703451425008425,
+              0.23772105718788822,
+              0.24230100416123287,
+              0.2468809511345775,
+              0.2510247126818893,
+              0.2525513616730042,
+              0.25407801066411906,
+              0.25560465965523393,
+              0.25800367949841446,
+              0.26105697748064416,
+              0.26411027546287397,
+              0.2671635734451037,
+              0.27021687142733347,
+              0.2732701694095633,
+              0.276323467391793,
+              0.2983508314064507,
+              0.34567695013101213,
+              0.39300306885557296,
+              0.4403291875801344,
+              0.4955066439732867,
+              0.5519926566445367,
+              0.6084786693157874,
+              0.6558047880403484,
+              0.6802311718981865,
+              0.7046575557560247,
+              0.7290839396138629,
+              0.7873146939892444,
+              0.8590671965716439,
+              0.9308196991540435,
+              0.9927580296507039,
+              0.9958113276329336,
+              0.9988646256151633,
+              1.001917923597393,
+              1.0651648103721523,
+              1.1735568887413077,
+              1.2819489671104647,
+              1.3903410454796215
+            ]
+          },
+          "3": {
+            "n": 29,
+            "x": [
+              0.10237304266662893,
+              0.10373801656885065,
+              0.10692295567403466,
+              0.11010789477921867,
+              0.11329283388440269,
+              0.11920772079403014,
+              0.12557759900439816,
+              0.13194747721476618,
+              0.13740737282365306,
+              0.14059231192883706,
+              0.1437772510340211,
+              0.14696219013920508,
+              0.14787217274068623,
+              0.14923714664290796,
+              0.15879196395846001,
+              0.16834678127401204,
+              0.17790159858956406,
+              0.21293592874658823,
+              0.26707989353471645,
+              0.32122385832284456,
+              0.3753678231109728,
+              0.490102287360443,
+              0.6048367516099132,
+              0.7195712158593834,
+              0.7851337668590803,
+              0.8126134486991482,
+              0.8446730775125607,
+              0.8767327063259731,
+              0.9031219246009589,
+              0.9153351165298779,
+              0.9275483084587969,
+              0.9397615003877159,
+              0.9497937651864709,
+              0.9589536591331601,
+              0.9681135530798494,
+              0.976401076174473,
+              0.9794543741567028,
+              0.9825076721389325,
+              0.9855609701211623,
+              0.9990827183281797,
+              1.0204558042037881,
+              1.0418288900793962,
+              1.0632019759550047,
+              1.072361869901694,
+              1.0815217638483832,
+              1.0906816577950726,
+              1.1181613396351406,
+              1.1700674053330467,
+              1.2219734710309522,
+              1.273879536728858,
+              1.2969973643085972,
+              1.315317152201976,
+              1.3336369400953545,
+              1.356318582249061,
+              1.3899048600535886,
+              1.423491137858116,
+              1.4570774156626436,
+              1.5244680639847141,
+              1.6053804605138031,
+              1.686292857042892,
+              1.7569548960602088,
+              1.766114790006898,
+              1.7752746839535873,
+              1.7844345779002766,
+              1.8363406435981826,
+              1.9203063381095002,
+              2.0042720326208188,
+              2.0882377271321375,
+              2.1050308660344013,
+              2.121824004936665,
+              2.1386171438389283,
+              2.20055547433559,
+              2.3226873936247805,
+              2.4448193129139697,
+              2.5669512322031607,
+              2.6642205822084803,
+              2.757346170666487,
+              2.850471759124495,
+              2.931384155653583,
+              2.981763572360374,
+              3.032142989067165,
+              3.082522405773956,
+              3.646510161634393,
+              4.415941253156295,
+              5.185372344678197,
+              5.84488470883982,
+              6.963264141187977,
+              8.920428147797235,
+              10.877592154406518,
+              12.8347561610158
+            ],
+            "y": [
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.012284765119995473,
+              0.015469704225179483,
+              0.0186546433303635,
+              0.02183958243554751,
+              0.028209460645915535,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03678272216890997,
+              0.03944109678227697,
+              0.04209947139564397,
+              0.0524512974804469,
+              0.05997549607951309,
+              0.05997549607951309,
+              0.05997549607951309,
+              0.0621564232096772,
+              0.06978966816525158,
+              0.077422913120826,
+              0.08505615807640036,
+              0.09159893946689274,
+              0.09770553543135223,
+              0.10381213139581173,
+              0.10926444922122203,
+              0.1107910982123369,
+              0.11231774720345178,
+              0.11384439619456667,
+              0.11711578688981283,
+              0.12169573386315745,
+              0.12627568083650206,
+              0.13085562780984672,
+              0.1415421707476509,
+              0.15222871368545504,
+              0.16291525662325917,
+              0.16902185258771868,
+              0.16902185258771868,
+              0.16902185258771868,
+              0.16902185258771868,
+              0.1742560777001125,
+              0.18036267366457207,
+              0.1864692696290316,
+              0.19170349474142542,
+              0.1947567927236552,
+              0.19781009070588496,
+              0.20086338868811474,
+              0.2050071502354265,
+              0.2095870972087712,
+              0.21416704418211585,
+              0.22049173285959192,
+              0.23728487176185542,
+              0.25407801066411917,
+              0.27087114956638264,
+              0.2859195467645151,
+              0.29965938768454886,
+              0.31339922860458286,
+              0.3271390695246168,
+              0.3362989634713061,
+              0.3454588574179954,
+              0.3546187513646846,
+              0.3762099299533095,
+              0.4143761547311816,
+              0.45254237950905324,
+              0.49070860428692537,
+              0.5236406039524035,
+              0.5557002327658157,
+              0.5877598615792283,
+              0.6145852652802467,
+              0.6283251062002807,
+              0.6420649471203146,
+              0.6558047880403486,
+              0.7611435684272748,
+              0.9031219246009591,
+              1.0451002807746435,
+              1.2194654048312634,
+              1.3790002244027681,
+              1.5499849114076332,
+              1.7209695984125002,
+              1.8919542854173672
+            ]
+          },
+          "4": {
+            "n": 33,
+            "x": [
+              0.022749565037028654,
+              0.02638949544295324,
+              0.03002942584887782,
+              0.033669356254802406,
+              0.03730928666072699,
+              0.040949217066651576,
+              0.04458914747257616,
+              0.04549913007405731,
+              0.05004904308146304,
+              0.0573289038933122,
+              0.06460876470516137,
+              0.06824869511108596,
+              0.06961366901330768,
+              0.07325359941923226,
+              0.07689352982515685,
+              0.08053346023108143,
+              0.08417339063700602,
+              0.0878133210429306,
+              0.09099826014811462,
+              0.0946381905540392,
+              0.09827812095996379,
+              0.10191805136588837,
+              0.1042415705422704,
+              0.10637703097157494,
+              0.10851249140087948,
+              0.11563460459955753,
+              0.12441893538802676,
+              0.13320326617649597,
+              0.14104730322957768,
+              0.14832716404142682,
+              0.155607024853276,
+              0.15993856797969783,
+              0.16132179342069233,
+              0.16270501886168684,
+              0.16578077302637892,
+              0.17167740839723356,
+              0.17757404376808822,
+              0.18444803028781095,
+              0.1942540702541379,
+              0.20406011022046486,
+              0.21264039519100092,
+              0.22310884541578868,
+              0.23357729564057644,
+              0.24404574586536418,
+              0.26062079205461147,
+              0.2780682090959244,
+              0.29551562613723725,
+              0.3011860366756639,
+              0.30293077837979515,
+              0.30467552008392645,
+              0.31732489743887826,
+              0.3365170561843225,
+              0.35570921492976665,
+              0.3661776651545544,
+              0.3679224068586857,
+              0.36966714856281696,
+              0.37730039351839145,
+              0.3947478105597043,
+              0.41219522760101723,
+              0.4287702737902645,
+              0.44272820742331487,
+              0.45668614105636507,
+              0.4710802601154482,
+              0.4885276771567611,
+              0.505975094198074,
+              0.5234225112393869,
+              0.5304014780559121,
+              0.5373804448724372,
+              0.5443594116889624,
+              0.610877689158968,
+              0.6859015824366136,
+              0.7609254757142592,
+              0.8097782434299351,
+              0.8499073026249548,
+              0.890036361819974,
+              0.9367082024054861,
+              0.9873057118252935,
+              1.037903221245101,
+              1.0823941347004489,
+              1.1207784521913373,
+              1.1591627696822258,
+              1.2969973643085986,
+              1.6005824208274433,
+              1.904167477346288,
+              2.345150943065475,
+              3.198329636385676,
+              4.051508329705868,
+              5.069783206779489,
+              7.243731370127078,
+              9.417679533474667,
+              11.591627696822256
+            ],
+            "y": [
+              0.00545231782541028,
+              0.007347506527203575,
+              0.00924269522899687,
+              0.011137883930790165,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.011374782518514327,
+              0.01237121671005763,
+              0.013965511416526914,
+              0.015559806122996197,
+              0.018974066032427774,
+              0.021922106549887625,
+              0.022223000545211636,
+              0.022523894540535647,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.022749565037028654,
+              0.02593450414221266,
+              0.029574434548137244,
+              0.03321436495406183,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03412434755554298,
+              0.03460937282222246,
+              0.03590277353336773,
+              0.037196174244513006,
+              0.03947478105597043,
+              0.044709006168364304,
+              0.04994323128075818,
+              0.05452317825410281,
+              0.05527541324241283,
+              0.05602764823072286,
+              0.05677988321903288,
+              0.05774235596891524,
+              0.05873486268473651,
+              0.05972736940055778,
+              0.061284052357611564,
+              0.06302879406174283,
+              0.06477353576587412,
+              0.06542781390492336,
+              0.06542781390492336,
+              0.06542781390492336,
+              0.06630018475698901,
+              0.0680449264611203,
+              0.06978966816525159,
+              0.07088013173033364,
+              0.07088013173033364,
+              0.07088013173033364,
+              0.07157959940227498,
+              0.07437747009004032,
+              0.07717534077780562,
+              0.07970992921966244,
+              0.0804015419401597,
+              0.08109315466065695,
+              0.0817847673811542,
+              0.08527425078941678,
+              0.08876373419767937,
+              0.09225321760594195,
+              0.09421605202308965,
+              0.09596079372722094,
+              0.09770553543135223,
+              0.09945027713548352,
+              0.1011950188396148,
+              0.10293976054374608,
+              0.12758423711460048,
+              0.16596855460548887,
+              0.2043528720963773,
+              0.22703451425008409,
+              0.23401348106660924,
+              0.24099244788313443,
+              0.24993424911680728,
+              0.26214744104572635,
+              0.27436063297464536,
+              0.3245219569684208,
+              0.48852767715676215,
+              0.6525333973451017,
+              0.8252628260540994,
+              1.0590582144076923,
+              1.2928536027612854,
+              1.5266489911148784
+            ]
+          }
+        },
+        "tail_policy": "clip_and_flag",
+        "tie_policy": "mean_target_of_tied_source_quantiles"
+      },
+      "source_range": [
+        0.011374782518514327,
+        12.8347561610158
+      ],
+      "training_hash": "7888af416be6f868548f2b851b1d81dc6415334687625cbe8532b59ecb34562e",
+      "training_pairs": 125,
+      "training_regions": [
+        "JOR",
+        "SYR"
+      ],
+      "training_years": [
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ]
+    },
+    "regression": {
+      "algorithm_version": "sensor-calibration-v1",
+      "bounded_occupancy": false,
+      "context": {
+        "code_sha256": "c7782df9cbfd6f0ae2ea2c171762567a900007754ee531a9ffcecd0791cdd3f8",
+        "daynight": "D",
+        "grid_size_m": 5000,
+        "native_product_versions": {
+          "MODIS_AQUA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "MODIS_TERRA": [
+            "6.03",
+            "6.2",
+            "61.03"
+          ],
+          "VIIRS_SNPP": [
+            "2"
+          ]
+        },
+        "reference": "MODIS_AQUA",
+        "region_geometry_sha256": "acf11a11008f977cf1ae88800af2bd5286b299b67b75029adcd8a643459fba7f",
+        "source": "VIIRS_SNPP"
+      },
+      "method": "regression",
+      "metric": "reported_cell_days_per_1000km2_month",
+      "model_version": "51926714edf54152d83ca319a8f3727a3e50f63619084b5db5b3f31af7994dca",
+      "parameters": {
+        "coefficients": [
+          -0.06307148574819911,
+          0.3892103393892446,
+          0.010386187367240394,
+          0.03880591395513554,
+          -0.015924829608995352,
+          0.02330890086360323
+        ],
+        "features": [
+          "intercept",
+          "log1p_source",
+          "sin1",
+          "cos1",
+          "sin2",
+          "cos2"
+        ],
+        "response": "log1p"
+      },
+      "source_range": [
+        0.011374782518514327,
+        12.8347561610158
+      ],
+      "training_hash": "7888af416be6f868548f2b851b1d81dc6415334687625cbe8532b59ecb34562e",
+      "training_pairs": 125,
+      "training_regions": [
+        "JOR",
+        "SYR"
+      ],
+      "training_years": [
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ]
+    }
+  },
+  "native_product_versions": {
+    "MODIS_AQUA": [
+      "6.03",
+      "6.2",
+      "61.03"
+    ],
+    "MODIS_TERRA": [
+      "6.03",
+      "6.2",
+      "61.03"
+    ],
+    "VIIRS_SNPP": [
+      "2"
+    ]
+  },
+  "operational_calibration_supported": false,
+  "operational_method": "baseline",
+  "paired_bins": 326,
+  "protocol": {
+    "bootstrap_repeats": 200,
+    "heldout_regions": [
+      "LBN"
+    ],
+    "max_extrapolation_fraction": 0.1,
+    "min_evaluation_pairs": 8,
+    "min_improvement": 0.1,
+    "min_training_pairs": 24,
+    "min_trend_months": 6,
+    "seed": 2026,
+    "test_years": [
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "train_years": [
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+    ],
+    "validation_years": [
+      2020,
+      2021
+    ]
+  },
+  "reference_sensor": "MODIS_AQUA",
+  "selection_rule": "minimum validation MAE among predeclared qualifying candidates; tests never choose a replacement",
+  "selection_used_test_data": false,
+  "source_sensor": "VIIRS_SNPP",
+  "unpaired_bins": 142,
+  "validation_selected_method": "quantile_mapping"
+}
