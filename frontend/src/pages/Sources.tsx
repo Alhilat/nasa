@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { ArrowRight, Check, Database, FileCheck2, Grid2X2, Layers2, Play, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import * as echarts from 'echarts/core';
 import { MarkLineComponent } from 'echarts/components';
 import { api, request } from '../api';
 import ScientificChart from '../components/ScientificChart';
 import { visualTheme as theme } from '../visualTheme';
-import type { Job, Observations, Source } from '../types';
+import { useResource } from '../useResource';
+import type { Job, Source } from '../types';
 
 echarts.use([MarkLineComponent]);
 
