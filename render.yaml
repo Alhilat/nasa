@@ -33,7 +33,6 @@ services:
   - type: web
     name: firescope-web
     runtime: static
-    region: oregon
     rootDir: frontend
     buildCommand: npm install --global pnpm@11.25.0 && pnpm install --frozen-lockfile && pnpm build
     staticPublishPath: dist
@@ -45,6 +44,12 @@ services:
       - key: VITE_MAP_STYLE_URL
         value: ""
     routes:
+      - type: rewrite
+        source: /basemap/imagery/*
+        destination: https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/*
+      - type: rewrite
+        source: /basemap/reference/*
+        destination: https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/*
       - type: rewrite
         source: /*
         destination: /index.html
